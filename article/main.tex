@@ -1,0 +1,663 @@
+\documentclass[]{interact}
+
+\usepackage{fix-cm}
+\usepackage{textcomp}
+\usepackage{epstopdf}% To incorporate .eps illustrations using PDFLaTeX, etc.
+\usepackage[caption=false]{subfig}% Support for small, `sub' figures and tables
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{verbatim}
+\usepackage{microtype}
+
+\newcommand{\eg}{\emph{e.g.}}
+\newcommand{\ie}{\emph{i.e.}}
+
+\newcommand{\stepa}{Intelligent Clinical Assessment}
+\newcommand{\stepb}{Personalized Content Synthesis}
+\newcommand{\stepc}{Immersive Scene Reconstruction}
+
+\newcommand{\stepas}{ICA}
+\newcommand{\stepbs}{PCS}
+\newcommand{\stepcs}{ISR}
+
+\newcommand{\sysname}{Carefree}
+
+
+% Citation support using apacite.sty (compatible with apacite.bst)
+\usepackage[natbibapa,nodoi]{apacite}
+\setlength\bibhang{12pt}
+\renewcommand\bibliographytypesize{\fontsize{10}{12}\selectfont}
+
+\begin{document}
+
+\articletype{Research Article}
+
+\title{Human-AI Collaborative Virtual Reality Exposure Therapy for Personalized Treatment of Anxiety Disorder}
+
+\author{
+\name{Anonymous}
+\affil{~}
+}
+
+\maketitle
+
+\begin{abstract}
+Virtual Reality Exposure Therapy (VRET) shows significant promise for treating anxiety disorders, yet its effectiveness is often limited by a reliance on pre-designed, standardized virtual environments (Virtual Environments, VEs) that fail to activate a patient's highly individualized \emph{fear structures} or address cultural nuances. This paper introduces an end-to-end generative VRET framework, built upon a philosophy of \emph{Human-AI Collaboration}, that empowers therapists to transform the patient's narrative into personalized, immersive 3D therapeutic environments. Our framework integrates three core components that work in synergy to maintain therapist oversight: (1) a Clinical Intelligence Engine that translates patient data into a structured cognitive-semantic map, grounding the analysis in established clinical knowledge to provide therapists with actionable insights; (2) a Tailored Scenario Generation Pipeline that facilitates a collaborative dialogue, allowing the therapist to iteratively guide the AI in shaping the narrative and fine-tuning its therapeutic intensity; and (3) an Immersive Environment Reconstruction Module that rapidly synthesizes the co-created scenario into a high-fidelity, explorable 3D environment. By maintaining Human-AI Collaboration control at each stage, our system facilitates the on-demand generation of culturally sensitive and personally meaningful therapeutic settings. This work contributes to the development of personalized mental health interventions by providing a framework that extends beyond generic, pre-fabricated therapeutic content.
+\end{abstract}
+
+\begin{keywords}
+Virtual Reality, Exposure Therapy, Anxiety Disorders, Generative AI, Large Language Models, 3D Gaussian Splatting, Mental Health Technology, Human-AI Collaboration
+\end{keywords}
+
+\section{Introduction}
+
+Virtual Reality Exposure Therapy (VRET) has considerably evolved anxiety disorder treatment by leveraging interactive virtual environments based on Virtual Reality (VR) techniques. %which is grounded in the Emotional Processing Theory~\cite{foa1986emotional}.
+In practice, the VRET clinical workflow for anxiety disorder treatment can be standardized to comprise the following steps~\cite{powers2008virtual, botella2017recent, boeldt2019using, emmelkamp2021virtual}: 
+\begin{itemize}
+    \item The clinician collects a patient's comprehensive information, including anxiety triggers, symptom patterns and functional impairments;
+    \item The clinician conducts a clinical assessment to evaluate the patient's symptom severity with standardized diagnostic instruments and behavioral assessment protocols~\cite{boeldt2019using};
+    \item The clinician configures a virtual scene to approximate the patient's fears, usually by selecting a pre-designed scene;
+    \item The clinician implements a graded exposure therapy to expose increasingly anxiety-provoking stimuli to the patient using the virtual scene, corresponding to predetermined levels of fear~\cite{powers2008virtual}.
+\end{itemize}
+%clinicians select from available pre-designed virtual scenes that best approximate the patient's feared situations. Finally, the process culminates in graded exposure therapy, implementing a hierarchical approach where patients are systematically exposed to increasingly anxiety-provoking virtual stimuli according to predetermined fear hierarchies~\cite{powers2008virtual}.
+Following this standardized workflow, VRET has demonstrated significant patient acceptance since it enables less intense fears than facing real feared scenes~\cite{garcia2007comparing}, and also considerable clinical effectiveness for treating various anxiety disorders~\cite{parsons2008affective,botella2017recent, emmelkamp2021virtual}, especially related to social anxiety~\cite{powers2008virtual}.
+
+%This standard approach has demonstrated considerable clinical efficacy, with Powers and Emmelkamp's meta-analysis~\cite{powers2008virtual} revealing large effect sizes (Cohen's d = 1.11; k = 13 trials) for anxiety disorders—predominantly specific phobias and social anxiety. 
+
+%Complementary meta-analytic evidence on affective outcomes~\cite{parsons2008affective} and recent authoritative reviews~\cite{botella2017recent, emmelkamp2021virtual} further establish VRET as evidence-based across multiple anxiety disorders. 
+
+%Patient acceptance studies also show strong preference for VR exposure, with Garcia-Palacios et al.~\cite{garcia2007comparing} reporting that 76% of participants (N = 150) chose VR over in vivo exposure, citing reduced fear of confronting real feared objects.
+
+Despite its proven promises, this standardized workflow struggles with the feasible activation of the patient's unique~\emph{fear structure}~\cite{foa1986emotional}, \ie, a cognitive-emotional network linking feared stimuli, physical reactions and individual-specific meanings, caused by two noticeable bottlenecks. 
+The first bottleneck arises from the conflict between achieving deep customization and maintaining scalability in virtual scene configuration.
+This trade-off is evident on both sides of the clinical workflow. On one hand, the high-efficiency approach—relying on commonly used pre-designed virtual scenes—often proves therapeutically ineffective. These scenes often lack the relevance to individual experiences and fail to elicit necessary emotional arousal required by anxiety disorder treatment~\cite{garcia2007comparing}, as presence is crucial for therapeutic effectiveness~\cite{cummings2015immersive}. Although recent VRET systems using biofeedback techniques provide real-time physiological adaptation to virtual scenes~\cite{zelis2025adaptive, luddecke2022virtual, kothgassner2022virtual}, they are still limited to tuning pre-defined content rather than producing new therapeutic assets.
+Conversely, the high-effectiveness approach of creating truly personalized virtual scenes is plagued by severe inefficiency. This manual process requires intensive resources; for example, a participatory design study suggests that manually producing only four specialized 3D scenes took two days with twenty participants~\cite{flobak2019participatory}.
+%Current VRET systems demonstrate systematic inadequacies in achieving this critical therapeutic prerequisite, creating barriers to widespread clinical adoption~\cite{emmelkamp2021virtual}.
+
+%Two primary bottlenecks impede optimal VRET deployment. First, current implementations face an intractable tension between therapeutic personalization and practical feasibility. Creating individualized virtual scenes remains resource-intensive, as demonstrated by Flobak et al.'s participatory design study~\cite{flobak2019participatory}, which required a two-day workshop with 15 adolescents and multiple facilitators to produce just four personalized scenarios—illustrating the "demanding and time-consuming" nature of creating tailored 3D content that Boeldt et al. identify as a key barrier to clinical adoption~\cite{boeldt2019using}. 
+%Conversely, standardized scenes suffer from insufficient personal relevance, frequently failing to elicit necessary emotional arousal for effective treatment. As demonstrated in Zahabi and Abdul Razak's systematic review~\cite{zahabi2020adaptive}, "non-adaptive training systems in which one training procedure is used for all trainees" lead to "trainee's disengagement and boredom" due to the lack of personalization based on individual capabilities and needs. This is particularly problematic in VRET, where Cummings and Bailenson's meta-analysis~\cite{cummings2015immersive} establishes that presence—the psychological experience of "being there"—is crucial for therapeutic effectiveness, yet standardized virtual scenes often fail to achieve sufficient presence due to limited personal relevance~\cite{garcia2007comparing}. Recent biofeedback-driven VRET systems~\cite{zelis2025adaptive, luddecke2022virtual, kothgassner2022virtual} demonstrate real-time physiological adaptation potential, but remain limited to adjusting pre-existing content parameters rather than generating novel therapeutic environments. This forces clinicians to choose between therapeutic efficacy and practical feasibility.
+
+The second bottleneck is characterized by interactional rigidity, stemming from a reliance on limited parametric adjustments rather than true semantic adaptation. Following the standardized workflow, the treatment process operates in a determined mode once the virtual scene is configured, providing the clinician with restricted control over the scene's narrative details during an active session~\cite{boeldt2019using, bawany2023design}. Although existing VRET systems have enabled the clinician to re-select a virtual scene capable~\cite{marques2024gamified} or adjust the exposure intensity~\cite{zelis2025adaptive} during the session, these mechanisms are confined to pre-defined variables. Crucially, they are yet to support the generation of semantically rational content based on the patient's information and reactions, constraining therapeutic responsiveness especially when the reactions differ from the expected~\cite{freeman2017virtual}. This inability to dynamically modify the scene's semantics results in unpredictable time management~\cite{pittig2019struggle} and less clinician acceptance~\cite{jeon2025why}.Obviously, these bottlenecks confine the widespread clinical application of existing VRET systems for anxiety disorder treatment~\cite{boeldt2019using, emmelkamp2021virtual}.
+
+Recent increasing research into the application of Artificial Intelligence (AI) tools in healthcare and medical diagnosis suggests that human-AI collaboration could benefit clinical decision making~\cite{Yu2018,Topol2019,Cabitza2023}.
+At the same time, leveraging Generative AI techniques for VR has proved a fundamental shift in making virtual environments adaptable to user needs~\cite{Rahimi2025}.
+Therefore, in this paper, we explore the potentials of Generative AI in VRET and propose a novel human-AI collaborative clinical workflow for personalized treatment of anxiety disorder.
+As illustrated by Figure~\ref{fig:vret_comparison}, our workflow adopts various Generative AI techniques to produce adjustable personalized content based on the patient's narrative and reconstruct high-quality explorable 3D virtual scenes aligned to clinician-guided treatment goals in an on-demand and efficient manner, addressing the afore-discussed bottlenecks of the standardized workflow.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{illustration/Comparison of Standardized VRET and Generative AI-Enhanced VRET Processes.png}
+  \caption{Comparison between standardized VRET workflow and human–AI collaborative enhanced VRET workflow. (a) The standardized workflow is mainly therapist-driven, involving patient information input, clinical assessment, scene selection and determination, followed by graded exposure therapy, with possible use of biofeedback and limited participatory adjustment. However, it faces a dilemma between cost and customization. (b) The human–AI collaborative workflow incorporates AI in clinical assessment and environment generation, enabling co-created and tailored scene design. With scene reconstruction supported by 3D Gaussian techniques, this approach achieves low-cost, highly personalized virtual environments, ultimately supporting graded exposure therapy.}
+  \label{fig:vret_comparison}
+\end{figure}
+%In particular, the proposed workflow differs from those existing works with focus on building text-based AI agents for exposure therapy~\cite{fitzpatrick2017delivering}.
+%This also differs from the existing attempt to build text-based AI agents for exposure therapy~\cite{fitzpatrick2017delivering}.
+%to efficiently create personalized virtual scenes by involving AI-powered tailored environment generation and immersive scene reconstruction, which is its key distinction from the standardized workflow.
+%the key differences between standardized VRET approaches and our human-AI collaborative workflow. Unlike traditional systems that force therapists to select from pre-designed scenes, our approach enables dynamic, on-demand creation of personalized therapeutic environments. 
+%In particular, the proposed workflow focuses on leveraging various generative AI techniques to produce immersive 3D virtual scenes aligned to therapist-guided clinical goals, instead of merely building text-based AI agents for exposure therapy~\cite{fitzpatrick2017delivering}.
+Specifically, the proposed human-AI collaboration VRET clinical workflow is characterized by three core steps that reshapes the conventional clinical assessment and virtual scene configuration, as follows: 
+\begin{itemize}
+
+\item~\textbf{\stepa}~(\stepas). The collected information from the patient is analyzed by a Large Language Model (LLM) to output a structured clinical report and a cognitive-semantic graph, assisting the clinician in identifying the patient's triggers while reducing cognitive load required by case conceptualization;
+    \item~\textbf{\stepb}~(\stepbs). A text-to-image synthesis model outputs a panoramic image to represent the content of the personalized virtual scene from a description based on the patient's narrative. The clinician can iteratively refine the content description for real-time exposure intensity adjustment using an intuitive interface with sliders and text prompts.
+    %ensuring human clinical judgment over the AI-generated content.
+    \item~\textbf{\stepc}~(\stepcs). The clinician uses text prompts to improve the details of the personalized panoramic image by a text-to-image synthesis model. Given the multi-view images sampled from the improved panoramic image, an immersive virtual scene is efficiently reconstructed by a novel view synthesis method within an individual therapy session to support graded exposure therapy.
+\end{itemize}
+
+Furthermore, we develop a prototype VRET system following the proposed collaborative clinical workflow for a user study, whose results validate the workflow's capability to provide efficient and controllable AI-powered production of personalized content and virtual scenes for VRET under human clinical guidance throughout the therapeutic process.
+%Beside, we develop a VRET system \textbf{HAICO} based on the proposed \textbf{H}uman-\textbf{AI} \textbf{CO}llaborative workflow, which practically transforms the patient's narrative into interactive personalized scenes through three core components: a Clinical Intelligence Engine (CIE), a Personalized Content Generator (PCG), and an Immersive Scene Reconstructor (ISR). %Figure~\ref{fig:vret_comparison} provides a detailed comparison of the candidacy evaluation and fear hierarchy construction processes, highlighting how our approach integrates RAG-augmented LLMs, cognitive networks, and advanced 3D generation techniques to enable dynamic therapeutic personalization with therapist supervision throughout the process.
+%Specifically, the CIE reforms clinical assessment using Retrieval-Augmented Generation (RAG)~\cite{lewis2020rag} to analyze the patient's information using large language models (LLMs) and knowledge bases~\cite{apa2013diagnostic}. It outputs a structured clinical report and a cognitive-semantic graph~\cite{bostock2011d3}, which assist the therapist in identifying the patient's triggers while reducing cognitive load during case conceptualization.
+%The Clinical Intelligence Engine (CIE) augments therapist assessment through Retrieval-Augmented Generation (RAG)~\cite{lewis2020rag}, analyzing patient data against authoritative knowledge bases like DSM-5~\cite{apa2013diagnostic}. It generates structured clinical reports and interactive cognitive-semantic network visualizations using force-directed graphs (D3.js implementation~\cite{bostock2011d3}), helping therapists quickly identify patient trigger points while reducing cognitive load during case conceptualization.
+%Given , the TEG allows the therapist to iteratively refine an AI-generated environment as the virtual scene's base using an intuitive interface, where sliders and natural language-based controls are available for the real-time adjustment of exposure intensity. It ensures that the human therapist's clinical judgment dominates the generated content while exploiting the capabilities of AI techniques.
+%Afterward, the TEG facilitates collaborative environment creation through an intuitive interface that allows therapists to iteratively guide AI-generated content. Dynamic adjustment sliders and natural language refinement controls enable real-time modification of exposure intensity, ensuring clinical judgment remains central to therapeutic decisions while leveraging AI's content generation capabilities.
+% Finally, the ISR synthesizes an panoramic
+% therapist confirmation of the co-created environment, the module generates 360° panoramic imagery with additional natural language editing capabilities (Flux.1.kontext integration~\cite{flux1kontext}), then employs 3D Gaussian Splatting (3DGS)~\cite{kerbl2023gaussiansplatting} to reconstruct high-fidelity, explorable scenes within a single therapy session. This interaction design enables therapists to maintain full control over therapeutic content while accessing AI's generative capabilities.
+% This multi-level, therapist-guided process ensures personalized, effective, and controllable VRET scenes while maintaining clinical oversight at each interaction point.
+The main contributions of this paper are summarized as follows:
+
+\begin{itemize}
+    \item \textbf{Human-Computer Interaction Innovation:} We design therapist-centered collaborative interfaces that combine interactive visualizations, dynamic adjustment controls, and natural language editing to support efficient human-AI co-creation, explicitly aiming to reduce cognitive load and improve clinical decision efficiency while filling gaps in traditional VRET's interaction flexibility.
+    \item \textbf{Technical Integration Framework:} We present an end-to-end system that seamlessly integrates RAG-based clinical analysis, semantic-driven collaborative environment generation, and 3DGS-based rapid scene synthesis, enabling on-demand therapeutic content creation.
+    \item \textbf{Empirical Validation:} We provide evidence through user studies with 16 mental health professionals that our framework generates high-fidelity, personalized virtual scenes within standard therapy session timeframes while maintaining clinical efficacy and therapist control.
+\end{itemize}
+
+\section{Related Work}
+
+This research is positioned at the intersection of mental health intervention, artificial intelligence, and human-computer interaction. To situate our work, we review related literature from three perspectives that progressively narrow our focus to identify a critical research gap: 1) the challenges in personalizing Virtual Reality Exposure Therapy (VRET); 2) the emergence of generative AI as a potential solution for on-demand content creation; and 3) the evolution of adaptivity in therapeutic systems, which provides the mechanism for integrating AI-generated content effectively.
+
+\subsection{Personalization in Virtual Reality Exposure Therapy}
+
+The pursuit of personalized VRET content has spawned diverse research approaches, each addressing different aspects of the individualization challenge. Research in VRET personalization can be categorized into four primary methodological approaches, each with distinct advantages and limitations.
+
+\textbf{Parametric Adjustment Approaches} modify pre-existing virtual environments through therapist-controlled variables. These systems enable real-time manipulation of environmental parameters such as lighting intensity, avatar proximity, crowd density, or scene complexity through therapist interfaces~\cite{freeman2017virtual, mozgai2020vret}. Rigorous studies demonstrate these systems' clinical feasibility~\cite{botella2017recent}, yet parametric approaches remain fundamentally constrained by the original scene design, limiting therapeutic relevance to predefined stimulus categories and environmental elements.
+
+\textbf{Wizard-of-Oz Methodologies} provide greater flexibility by enabling human operators to trigger scripted events or modify scenarios in real-time during exposure sessions. The BRAVEMIND system exemplifies this approach, allowing therapists to control directional 3D audio, vibrotactile, and olfactory stimuli through a separate "Wizard of Oz" control panel during VR exposure~\cite{rizzo2001virtual}. While offering high adaptability for military trauma treatment~\cite{mozgai2020iterative}, this approach requires intensive manual intervention and specialized training, making it unsuitable for routine clinical deployment due to significant staffing and resource requirements.
+
+\textbf{Participatory Design Methods} involve patients and therapists in collaborative content creation, ensuring high personal relevance and therapeutic specificity. Flobak et al.~\cite{flobak2019participatory} demonstrated this approach's effectiveness through workshops producing tailored scenarios for social anxiety. However, their study revealed significant resource requirements: a two-day workshop with 15 adolescents and multiple facilitators generated only four personalized scenarios, highlighting the "demanding and time-consuming" nature of this approach for routine clinical implementation. This resource intensity represents a fundamental scalability barrier in clinical practice.
+
+\textbf{Biofeedback-Driven Adaptation} represents the most technologically advanced current approach, automatically adjusting exposure parameters based on real-time physiological monitoring. Recent developments by Zelis et al.~\cite{zelis2025adaptive} demonstrate heart rate and galvanic skin response monitoring to dynamically adjust VR exposure intensity, while systematic reviews by Kothgassner et al.~\cite{kothgassner2022virtual} establish the theoretical foundation for physiologically-responsive VRET. However, these systems remain limited to parametric adjustments of pre-existing content—modifying stimulus intensity, proximity, or duration—rather than generating semantically novel therapeutic environments.
+
+While these manual and semi-manual approaches offer valuable personalization, they face fundamental scalability constraints due to time, cost, and resource limitations, creating an intractable tension between therapeutic personalization and practical feasibility. Creating individualized virtual scenes remains resource-intensive, forcing clinicians to choose between therapeutic efficacy and practical feasibility. The "time-to-treatment gap" between identifying individual fears and providing corresponding exposure scenes remains a critical barrier to effective fear structure activation within clinical sessions. This gap particularly affects the human-computer interaction aspect, as therapists require efficient, intuitive interfaces to create and modify therapeutic content without extensive technical training.
+
+\subsection{Generative AI as a Pathway to On-Demand Therapeutic Content}
+
+Large Language Models (LLMs) offer a promising solution to scalability challenges through on-demand content creation capabilities. Most current applications focus on text-based therapeutic interactions, such as conversational agents for therapeutic dialogue~\cite{fitzpatrick2017delivering}. However, recent advances demonstrate potential for multimodal therapeutic content generation that translates abstract emotions into concrete visual outputs. Unlike 2D text-based approaches, generating immersive 3D therapeutic environments requires addressing unique interaction design challenges: how to provide therapists with intuitive control over complex generative processes while maintaining clinical safety and reliability.
+
+Deploying LLMs in high-stakes therapeutic applications requires addressing critical risks including model "hallucinations" and lack of clinical sensitivity~\cite{stade2024large}. Mental health prediction research using machine learning~\cite{kamoji2024mental} demonstrates both AI's potential for psychological pattern analysis and the necessity for rigorous clinical validation protocols. These challenges highlight the need for adaptive, clinically-grounded human-computer interfaces that bridge generative AI capabilities with established therapeutic interaction principles.
+
+\subsection{From Parametric to Semantic Adaptation in Therapeutic Systems}
+
+Within therapeutic systems like VRET, adaptivity—the ability to respond to a user's state and context in real-time—is a cornerstone of personalization. To date, this concept has been most prominently realized through systems that achieve parametric adaptation: the automated adjustment of pre-defined variables based on real-time user data. The most prevalent approach is through biofeedback-driven systems, which link a patient's physiological data (e.g., heart rate, GSR) to parameters of the virtual environment to automatically regulate exposure intensity~\cite{zelis2025adaptive, luddecke2022virtual}. Recent developments in adaptive virtual reality exposure therapy with biofeedback~\cite{zelis2025adaptive} demonstrate the potential for real-time physiological monitoring to dynamically adjust exposure intensity based on the patient's stress levels, ensuring an optimal balance between therapeutic progress and patient comfort by continuously monitoring stress indicators. Another form is performance-based adaptation, such as Dynamic Difficulty Adjustment (DDA), which modifies task difficulty based on user performance.
+
+Current adaptive systems achieve primarily \emph{parametric adaptation}: adjusting quantity or intensity of pre-defined stimuli without altering their fundamental nature or meaning. Generative AI, however, enables \emph{semantic adaptation}\textendash a paradigm shift from automated bio-data response to therapist-guided narrative control through human-computer interaction. Rather than systems automatically adjusting numeric parameters, our approach empowers therapists to make clinically-informed, meaning-based environmental changes via natural language interfaces (e.g., "Make the interviewer appear more dismissive" or "Add a figure resembling their critical parent"). This "Human-AI Co-Creation" model~\cite{mosqueira2022human} leverages clinical expertise to modify virtual environment semantics in real-time, representing a more collaborative and interaction-focused approach to therapeutic personalization.
+
+The literature reveals a clear research trajectory toward personalized, adaptive therapeutic systems, yet identifies two fundamental bottlenecks that impede optimal VRET deployment. First, the cost-customization trade-off: while individualized content creation remains resource-intensive, standardized scenes suffer from insufficient personal relevance. Second, interaction rigidity: existing VRET interfaces lack the flexibility required for real-time therapeutic adaptation, with treatment following predetermined pathways once virtual scenes are selected. While existing systems demonstrate the value of real-time adaptation through biofeedback mechanisms~\cite{zelis2025adaptive}, they remain constrained to parametric adjustments of pre-existing content rather than semantic adaptation. Our work addresses these fundamental bottlenecks by presenting a framework that integrates generative AI's semantic adaptation capabilities with clinically-grounded, therapist-centered interaction design. We enable instant transformation from the patient's narrative to immersive therapeutic environment through intuitive human-AI collaborative interfaces, employing retrieval-augmented generation over authoritative clinical resources to ensure safety and validity. Unlike previous approaches that separate content creation from clinical workflow, our system embeds human-computer interaction principles throughout the generative process, maintaining therapist agency while leveraging AI capabilities for cost-effective, on-demand therapeutic environment creation.
+
+
+\section{Methods}
+
+Based on a human-AI collaboration paradigm, the proposed VRET clinical workflow for anxiety disorder treatment is designed to overcome the two fundamental bottlenecks identified in the standardized workflow: the cost-customization trade-off and interactional rigidity.
+It reshapes the conventional clinical assessment and virtual scene configuration steps by leveraging various Generative AI techniques to efficiently process complex clinical information and produce personalized content depicting individual experiences, thereby resolving the tension between production efficiency and therapeutic relevance.
+Furthermore, to address interactional rigidity, the workflow generates virtual scenes that enable immersive exploration and dynamic adaptation.
+Throughout this process, human clinicians maintain authoritative control, providing clinical guidance to ensure the adaptation of produced content and virtual scenes aligns precisely with the patient's information and narrative. 
+%To address the fundamental bottlenecks of cost-customization trade-offs and interaction rigidity identified in existing VRET systems, we have designed and implemented an end-to-end generative VR exposure therapy framework as a functional prototype. 
+%The core design philosophy of this system is \textbf{Human-AI Co-Creation of Therapeutic Content}, enabling \emph{semantic adaptation} rather than the \emph{parametric adaptation} limited to existing biofeedback-driven systems.
+%Within this framework, Artificial Intelligence (AI) is responsible for processing complex clinical information, generating personalized therapeutic environments, and reconstructing high-fidelity 3D scenes. 
+%Meanwhile, the therapist remains at the core of the decision-making process, responsible for guiding, validating, and controlling the semantic content and therapeutic progression.
+
+%
+
+%\textbf{Digital Replication and Augmentation of the Clinical Workflow}
+%The system's overall process is designed to align with and augment the real-world clinical diagnosis and exposure therapy planning workflow. For example, it transforms the traditionally implicit process of case conceptualization into a structured, AI-assisted, and visual analysis, providing tangible artifacts for the therapist to work with.
+
+%
+
+%
+
+%	extbf{Human-AI Collaboration Decision Making} Unlike traditional systems that force therapists to select from pre-designed scenes, our approach enables therapist-guided natural language control and interactive adjustments for meaning-level changes to therapeutic environments. This principle directly addresses the interaction rigidity identified in existing VRET interfaces, where treatment follows predetermined pathways with limited therapist control. The system provides interfaces for therapist interaction and intervention at every critical juncture, ensuring that clinical judgment remains central to therapeutic decisions while leveraging AI's content generation capabilities~\cite{mosqueira2022human}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\columnwidth]{illustration/Questionnaire flowchart.png}
+  \caption{Sample screen from the eight-step wizard for structured patient assessment, showing Step 3 (Core Symptom Assessment) of the user interface.}
+  \label{fig:questionnaire_flowchart}
+\end{figure}
+
+Our workflow begins by gathering the patient's information via a clinician-patient dialogue. As shown in Figure~\ref{fig:questionnaire_flowchart}, the clinician employs an interactive eight-step questionnaire wizard to comprehensively collect patient data, including demographics, stressor/trauma events, core symptoms, timelines/course, psychosocial context, medical/family history, functional impacts, and additional information including the patient's subjective narrative.
+During this process, the clinician can supplement the narrative by entering unstructured text at multiple points, focusing on the details about specific triggers, family context, functional impact descriptions, personal concerns, and primary concerns voiced by family members.
+%In particular, the core symptom assessment step involves the patient's intrusive symptoms, avoidance symptoms, hyperarousal symptoms, and negative changes in thinking and mood.
+
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{illustration/Clinical Intelligence Engine.png}
+  \caption{Schematic architecture of the Clinical Intelligence Engine. The system integrates multi-dimensional structured patient information from individuals with anxiety disorders, DSM-5 knowledge, vector database, and RAG mechanism, processed via the Deepseek-V3 model and LLM network. It supports symptom analysis, suicide risk assessment, cultural adaptation, and clinical recommendations, ultimately generating feasibility reports on VRET (Virtual Reality Exposure Therapy) and visual analytics to capture clinical features such as core beliefs, physiological activation, cognitive distortions, and trigger factors.}
+  \label{fig:cie}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{illustration/Tailored Scenario Generator.png}
+  \caption{Workflow of the Tailored Environment Generator. This module takes the patient's subjective narrative as input and integrates four dimensions—visual cues, environmental ambiance, psychological projection, and sensory metaphor. Adjustable sub-tags are extracted through LLM parsing and processed by diffusion models to generate fear-structure-adaptive panoramic imagery. The therapist then adjusts exposure intensity based on the generated environments, producing personalized VRET exposure environments aligned with the patient's fear hierarchy.}
+  \label{fig:tsg}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{illustration/Immersive Environment Reconstructor and Module Principles.png}
+  \caption{Illustration of the Immersive Scene Reconstructor and its core modules. The system integrates three key components: Flux.1 Kontext for fine-tuning predefined exposure-level panoramas using natural language and calibrating them with individualized fear constructs; diffusion models for text-to-image generation, high-resolution refinement, and panoramic imagery synthesis; and 3D Gaussian Splatting (3DGS) for reconstructing high-fidelity 3D scenes from multi-view panoramas. These modules work synergistically to enhance the realism, adaptability, and controllability of virtual exposure scenes.}
+  \label{fig:ier}
+\end{figure}
+\FloatBarrier
+
+% \subsection{The Co-Creative Workflow: From Clinical Assessment to Immersive Therapy Scene}
+
+%To illustrate the system's practical application, this section details the operational workflow a therapist would follow. The subsequent steps will systematically outline the process, beginning with the initial patient data input and culminating in the reconstruction of a personalized, immersive therapeutic scene. Unlike traditional VRET's resource-intensive individualized scene creation, our workflow enables rapid, cost-effective personalization while maintaining clinical control. The three core components that underpin this workflow are illustrated in Figures~\ref{fig:cie}, \ref{fig:tsg}, and \ref{fig:ier}.
+
+\subsection{\stepa}
+The~\stepas~step starts with generating a structured report, which evaluates the feasibility of VRET for the patient, from the collected information using a Large Language Model (LLM)~\cite{stade2024large}. It is noteworthy that this LLM is enhanced by the Retrieval-Augmented Generation (RAG)~\cite{lewis2020retrieval} technique on the standard classification of mental disorders as the knowledge base.
+The structured report is composed of the following sections: 
+\begin{itemize}
+    \item \textbf{Executive Summary}, as a concise overview for the report.
+    \item \textbf{Diagnostic Assessment}, providing a primary diagnosis with confidence level, secondary/differential diagnoses, and symptom verification aligned with DSM-5 criteria.
+    \item \textbf{Risk Assessment}, analyzing the patient's risk profile and evaluating the severity of functional impairment.
+    \item \textbf{Suitability Assessment}, calculating a score to quantify how VRET suits the patient and providing specific intervention strategies and treatment recommendations accordingly.
+    %providing treatment recommendations and includes a dedicated VR Therapy Suitability Assessment. This assessment outputs a quantitative suitability score and, based on that, proposes specific VR intervention strategies, relevant relative contraindications, and scenarios to avoid. 
+    \item \textbf{Quality Assessment}, evaluating the report's overall rigor and highlighting those parts requiring the clinician's further attention.
+\end{itemize}
+
+
+%This report contains several core analysis modules. First, the Diagnostic Assessment module generates a report that includes a primary diagnosis, a confidence level, and secondary and differential diagnoses, while also verifying symptoms against DSM-5 criteria. 
+%Second, the Risk Assessment module quantifies the patient's risk profile—for instance, by assessing the level and probability of suicidal risk and identifying key indicators such as social isolation. This module also assesses the severity of functional impairment and details its specific impact across domains like academics and social interactions.
+%For treatment planning, the report provides Treatment Recommendations and includes a dedicated VR Therapy Suitability Assessment. This assessment outputs a quantitative suitability score and, based on that, proposes specific VR intervention strategies, relevant relative contraindications, and scenarios to avoid. 
+%Additionally, the Semantic and Cultural Analysis module is responsible for extracting key themes, emotional tone, and metaphorical language patterns from the patient's narrative, while also evaluating their cultural background and social support system. 
+%Finally, a Quality Control module ensures the report's rigor. This module assesses the report's overall quality, validates it for clinical use, and points out areas needing further assessment. It also lists the data sources it relied upon and its limitations to support the therapist's final clinical judgment.
+
+Meanwhile, the patient's narrative is exclusively analyzed to build an interactive cognitive tag cloud.
+%This process is a multi-stage technical workflow. First, the backend's cognitive mapping service (cognitiveMappingService) initiates the AI analysis. This service, based on Cognitive Behavioral Therapy (CBT) theory~\cite{beck2024cognitive}, constructs a professional prompt template containing multiple cognitive dimensions (such as triggering events, cognitive patterns, emotional states, and behavioral responses) and instructs the Large Language Model (DeepSeek V3) to act as a cognitive therapist to extract structured cognitive nodes. For example, the system identifies and structures patient descriptions of physical symptoms as "Physical Symptoms" nodes, while identifying negative cognitive patterns as "Cognitive Patterns" nodes, assigning corresponding attributes like clinical intensity to each. 
+%After generating this structured report, the engine also performs a deep analysis of the patient's subjective narrative to extract key cognitive elements, ultimately rendering an interactive Cognitive Semantic Network graph. The network is displayed as a force-directed graph~\cite{Kobourov2012} where node size reflects its clinical importance and color is used to distinguish its category. 
+%This approach builds upon advances in mental health prediction using machine learning models~\cite{kamoji2024mental}, which demonstrate the potential for AI-driven analysis of psychological patterns and cognitive structures. These models have shown promising results in predicting mental health conditions through various data sources, including behavioral patterns and physiological signals, with ensemble learning techniques achieving high accuracy rates in clinical applications. 
+Specifically, a pre-designed text prompt—grounded in Cognitive Behavioral Therapy (CBT) theory~\cite{Hofmann2012} and incorporating multiple cognitive dimensions (e.g., triggering events, cognitive patterns, emotional states, and behavioral responses)—guides a LLM to extract key cognitive elements from the narrative as attributed tags. For each tag, its size and color in the visualization correspond to the clinical intensity and category, respectively. 
+%To enhance the representation of relationships among cognitive elements, a force-directed graph drawing algorithm~\cite{Kobourov2012} is employed and optimizes the graph layout by simulating physical forces between nodes. 
+The clinician can interact with the tag cloud through actions such as dragging, zooming, and hovering over tags to access detailed information.
+
+%This process is a multi-stage technical workflow. First, the backend's cognitive mapping service (cognitiveMappingService) initiates the AI analysis. This service, based on Cognitive Behavioral Therapy (CBT) theory~\cite{beck2024cognitive}, constructs a professional prompt template containing multiple cognitive dimensions (such as triggering events, cognitive patterns, emotional states, and behavioral responses) and instructs the Large Language Model (DeepSeek V3) to act as a cognitive therapist to extract structured cognitive nodes. For example, the system identifies and structures patient descriptions of physical symptoms as "Physical Symptoms" nodes, while identifying negative cognitive patterns as "Cognitive Patterns" nodes, assigning corresponding attributes like clinical intensity to each. 
+%After the AI returns the raw data, the backend's network service (networkService) processes and enriches it. It assigns specific visualization attributes to each extracted node; for instance, the node's size (symbolSize) in the graph is made proportional to its clinical importance or intensity. 
+%Finally, the frontend visualization component fetches this processed JSON data. It utilizes the D3.js library~\cite{bostock2011d3} to render a dynamic, interactive force-directed graph. 
+%The system creates a force simulation~\cite{kobourov2012spring} that automatically calculates and optimizes the network's layout by simulating physical forces between nodes (such as the repulsive force charge and the linking force link), making structural relationships immediately clear. Users can interact with this network by dragging nodes, zooming, and hovering to view detailed information.
+
+As shown in Figure~\ref{fig:clinical_analysis}, the structured clinical assessment report and the visualized cognitive tag cloud generated in the ICA step work in a complementary manner to support the clinician in decision-making on VRET for treatment, while also facilitating deeper empathetic understanding and case conceptualization.
+
+%This process provides the therapist with two complementary tools: a comprehensive clinical analysis report for structured decision-making, and a visual psychological map for deepening empathetic understanding and case conceptualization (see Figure~\ref{fig:clinical_analysis}).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{illustration/clinicalAnalysisReportAndCognitiveSemanticNetwork.png}
+  \caption{The two complementary outputs of the Clinical Intelligence Engine: (Left) A comprehensive clinical analysis report showing the Overview and VR Therapy Suitability Assessment sections, providing structured diagnostic insights, risk assessment, and treatment recommendations; (Right) An interactive Cognitive Semantic Network graph visualizing the patient's core beliefs, emotional triggers, and cognitive patterns as a force-directed network where node size indicates clinical importance and colors distinguish cognitive element categories.}
+  \label{fig:clinical_analysis}
+\end{figure} 
+\FloatBarrier
+
+
+\subsection{\stepb}
+The workflow proceeds to the \stepbs~step if the clinician decides to implement VRET for the patient. To begin with, semantic extraction is conducted on the patient's narrative from multiple perspectives, including visual cues, environmental atmosphere, psychological projection, and sensory metaphors.
+For each perspective, a pre-designed text prompt, which identifies the task (\eg, "You are a professional trauma description visual cue extraction system.") and specifies the focus (\eg, spatial layout, lighting, and color), instructs an LLM to generate corresponding specialized content descriptions as text.
+All these descriptions are then collectively processed by an LLM to output an initial content description for the personalized virtual scene, with priority given to visual cues. Simultaneously, the semantic extraction process is visualized as an interactive graph, providing the clinician with a traceable and comprehensible color-coded data flow map.
+
+%Based on a deep analysis and understanding of the case, the therapist can initiate the Tailored Environment Generation Pipeline. The system automatically generates an initial scene description based on the patient's core conflicts; this process is not a monolithic black box, but rather a rigorous, transparent, and interactive multi-stage process.
+
+%First, the backend service initiates a sequential processing workflow, calling four independent analysis functions to perform semantic extraction across four dimensions: Visual Cues, Environmental Atmosphere, Psychological Projection, and Sensory Metaphors. 
+%Within each function, the system loads a meticulously designed prompt template that includes specific guidance (e.g., instructions to focus on spatial layout, lighting, and color) and pairs it with a specialized system prompt (e.g., "You are a professional trauma description visual cue extraction system"). 
+%The request is then sent to the Large Language Model (DeepSeek V3) through a unified LLM interface function. This design ensures that each extraction is highly specialized and targeted.
+
+%After completing the sequential extraction across the four dimensions, the backend service calls a dedicated data processing function to format the nodes and connection relationships of the entire workflow. It assigns different colors to nodes at various stages (e.g., "Patient Input," "Concept Extraction," "Scene Categories") and ultimately generates visualization data for a Sankey Diagram. This provides the therapist with a fully traceable and comprehensible color-coded data flow map. Concurrently, the system integrates all extracted elements to construct a final prompt that prioritizes visual cues, generating the initial scene description.
+
+Once confirmed by the clinician, the current content description serves as input to a text-to-image synthesis model generating a $360	extdegree$ panoramic image as a preview of the virtual scene's content.
+%Next, after the user confirms the generated scene description, the frontend component asynchronously calls the panorama generation service. The system immediately calls the server-deployed diffusion model, using this description as a prompt to generate a 1024x512 resolution panoramic image. This image provides the therapist with an intuitive visual preview of the initial therapeutic scene, offering a concrete reference for the subsequent fine-tuning operations.
+To enable human-AI collaborative fine-tuning of the content description, the PCS step incorporates a dedicated interface built upon the quantifiable elements extracted from the description for exposure level configuration. These content elements are categorized according to the perspectives used in the semantic extraction process. Each element is paired with an adjustment slider for interactive manipulation of its value ranging from $[0,10]$ (\eg, "Crowd Density: 7/10"), and a caption describing its function and influence on the content description (\eg, "The density of the crowd in the scene.").
+The exposure level, whose value ranges from $[0,10]$, is calculated from the values of content elements based on the principle of Graded Exposure Therapy~\cite{Wiederhold2002}.
+Afterward, the new values of elements are wrapped in a pre-defined text prompt (\eg, "You are a professional VR therapy scene prompt optimization assistant."), instructing a LMM to rewrite the content description from the original one.
+Meanwhile, a report is generated to show the differences between two versions of the content description, allowing the clinician to observe the specific textual changes resulting from the element-wise adjustments.
+This design enables the clinician to reach the ideal exposure level by intuitively adjusting the values of content element and judge whether the content description is personalized as well as clinically suitable.
+%Finally, the system enters the most critical human-AI collaborative fine-tuning stage. The pipeline extracts quantifiable Environment Elements from the description and presents them in a dedicated user interface panel, categorized by types such as "Visual" and "Psychological Projection". Each element is paired with a dynamic adjustment slider. 
+%To support the therapist's clinical decisions, the interface provides a detailed description of each element's function and its influence on the scene description upon interaction. For example, the description for the "Reflection Clarity" slider explains that it controls the sharpness of the patient's reflection, with lower values intended to reduce the stress of self-confrontation.
+%To adhere to the Graded Exposure principle of exposure therapy~\cite{wolpe1961systematic}, the therapist can adjust multiple elements to configure the ideal therapeutic exposure level. 
+%Once the configuration is complete, the therapist can trigger a regeneration process, which fires a weight-update API request. The backend receives parameters including the original prompt, new element values, and their weights, and then executes its core intelligent weight-adjustment algorithm. This algorithm dynamically constructs an adjustmentInfo string containing all tuning details, such as, "Crowd Density: 7/10 (Description: The density of the crowd in the scene)". 
+%This instructional string, along with the original prompt, is wrapped by a system prompt assigning the role of a "professional VR therapy scene prompt optimization assistant" and sent to DeepSeek V3, instructing it to rewrite the scene based on these precise numerical values. 
+%After generating the new scene description, the backend service also calls a difference analysis function to generate a "diff" report between the old and new versions, allowing the therapist to clearly see the specific textual changes resulting from each adjustment.
+%Through the "extract-tune-regenerate" closed-loop workflow, the powerful content generation capabilities of AI are deeply integrated with the therapist's professional clinical judgment, ensuring the final therapeutic environment is personalized as well as clinically suitable and controllable.
+
+Upon the clinician's approval on the content description, the corresponding panoramic image is synthesized, with optional upscaling applied. A text-to-image synthesis model then enables iterative refinement of the panoramic image using text prompts given by the clinician. It allows the clinician to optimize the virtual scene's content regarding environmental details and crowd characteristics, achieving a closer match to the patient's specific fears.
+
+
+%Once the therapist is satisfied with the final text description in the "Environment Prompt," they can trigger the \textbf{Immersive Scene Reconstruction Module}. This module first calls a diffusion model to generate a 360° panoramic image, and the therapist can also choose to use an "upscale" function to generate a higher-resolution version in preparation for the subsequent 3D scene reconstruction. 
+%Next, the system utilizes the \textbf{Flux.1.kontext} model~\cite{flux1kontext} to enter an interactive refinement loop, where the therapist can use natural language commands to edit the image. For instance, in a relevant therapeutic scenario, the therapist could input commands to adjust environmental elements or modify character expressions to better match the patient's specific fears.
+
+\subsection{\stepc}
+Given the panoramic image depicting the personalized content, the final~\stepc~step concludes the proposed workflow by reconstructing the corresponding virtual scene through novel view synthesis.
+%Only after the therapist gives final confirmation on the multi-round optimized panoramic image and its corresponding text description can they choose to initiate the final 3D scene reconstruction process. 
+
+To obtain the high-quality multi-view images, the panoramic image is first mapped onto the inner surface of a virtual sphere representing the scene's space, and a virtual camera is fixed at the sphere's center, with its horizontal field of view set to $90	extdegree$. In particular, the positive direction of $y$-axis points to the center of the panoramic image.
+\begin{comment}
+本模块实现了一个自动化的多视图图像生成系统，用于从2:1等角矩形全景图中提取连续的视角序列，为3D Gaussian Splatting (3DGS)重建提供高质量的训练数据。该模块采用Figure-8（8字形）相机路径策略，模拟自然的场景观察过程，生成平滑连续的视频帧序列。
+\end{comment}
+\begin{comment}
+数学表达:
+Figure-8路径的生成基于以下参数化方程：
+angle = t × 4π// 时间参数 t ∈ [0, 1]
+yaw = (coverage / 2) × sin(angle)// 水平方向（偏航角 yaw）
+pitch = amplitude × sin(2 × angle)// 垂直方向（俯仰角 pitch）
+其中：coverage: 水平覆盖范围（默认180°））
+amplitude: 垂直振幅（由速度参数决定，典型值20-30°）
+angle: 相位角，在路径过程中从0增长到4π（两个完整周期）
+运动特性：
+1.水平扫视，相机在水平方向上呈正弦波动，振幅由覆盖角度决定（±coverage/2）频率与4π对应，形成两个完整的左右摆动
+2. 垂直振荡：垂直方向以2倍频率振荡，在水平扫视过程中提供上下视角变化，振幅可通过速度参数调节。
+3. 相位关系：垂直运动频率是水平运动的2倍，确保在左右两侧分别形成独立的循环，自然地覆盖场景的不同高度层次。
+\end{comment}
+\begin{comment}
+前半球采样策略:
+1.场景信息集中度，核心场景内容通常集中在前方180°范围内，全景图的中心区域（前半球）承载了最重要的语义信息和治疗相关内容，例如关键的暴露元素（如恐惧对象、触发环境）通常位于患者视线前方，后半球往往包含背景环境或重复信息，对治疗效果的贡献较小。
+2.数据效率考虑,通过聚焦前半球，可以将计算资源集中在信息密度最高的区域，减少冗余采样，提高单位视角的信息价值。
+\end{comment}
+%This automated process first loads the 2:1 ratio equirectangular panoramic image on the web client. 
+%The system utilizes the Three.js library~\cite{threejs} to create an inverted virtual sphere and applies the panorama as a texture material to its inner surface, thereby recreating the complete 360° scene in virtual space. 
+%Next, the system configures a virtual camera fixed at the sphere's center (0,0,0) with its Field of View (FOV) set to 90 degrees, ensuring the captured perspectives are both broad and detail-rich.
+To ensure comprehensive coverage while maintaining natural viewing patterns, we employ a figure-8 camera path that smoothly traverses the front hemisphere along the $y$-axis. This hemisphere, corresponding to polar angles and azimuth angles from $[0	extdegree,180	extdegree]$ in spherical coordinates, concentrates the majority of the scene's semantic content and therapeutic elements. The figure-8 trajectory combines horizontal sweeping motion with periodic vertical oscillations, generating a continuous sequence of view images along the smooth camera path. This video-based sampling approach captures the scene with temporal continuity, where each frame maintains spatial coherence with its neighbors. 
+%generate camera poses in the front hemisphere. In particular, $7$ layers are  within the pitch angle range of $-90	extdegree$ to $0	extdegree$ and performs $360	extdegree$ horizontal yaw sampling at a $15	extdegree$ step for each layer;
+%To provide high-quality input for 3DGS, we employ a dense front-hemisphere sampling strategy. The system establishes 7 layers within the pitch angle range of -90° to 0° and performs 360° horizontal yaw sampling at a 15-degree step for each layer. 
+%This process generates a series of multi-view images with precise naming conventions (e.g., \texttt{view\_pitch-45\_yaw60.png}). 
+%The corresponding view images are then genereatedgene is generated using each camera pose.
+%For each camera pose, the corresponding view image is generated.
+
+%Simultaneously, for each captured image, the system records the camera's rotational pose at that instant (represented as a quaternion) and its fixed translational position ([0,0,0]). This data, along with camera intrinsics (FOV, aspect ratio), is formatted and saved into a 3DGS-compatible \texttt{cameras.json} file.
+%Finally, the folder containing the multi-view images and the \texttt{cameras.json} pose file are submitted together to the 3DGS reconstruction program. 
+
+Based on these multi-view images and camera poses, a personalized and vivid 3D virtual scene is reconstructed using a novel view synthesis method, which can be loaded on a VR headset and further support the VRET for the patient.
+%Ultimately, a personalized, photorealistic, and volumetric 3D therapeutic scene is rendered in the VR device using 3D Gaussian Splatting~\cite{kerbl2023gaussiansplatting}. 
+%The patient can then don the headset and, in a virtual world shaped by their personal narrative and twice fine-tuned by their therapist, safely practice the emotion regulation skills taught by the therapist.
+
+\subsection{Implementation Details}
+We implemented the proposed workflow as a Web application using the MERN stack~\cite{Koroliova2018MERN} (MongoDB, ExpressJS, React, and Node).
+
+%We implemented the proposed workflow as a clinician-oriented Web application is driven by three core technical components, implemented with a MERN stack (MongoDB~\cite{mongodb}, Express.js~\cite{expressjs}, React~\cite{react}, Node.js~\cite{nodejs}) for the backend and a React-based frontend using D3.js for visualizations.
+In the~\stepas~step, we employed DeepSeek-V3 (\texttt{deepseek\hspace{0pt}-chat})~\cite{deepseekv3} as the primary Large Language Model for clinical report generation and cognitive element extraction. The model used temperature=0.3 for diagnostic analysis tasks to ensure factual consistency and 0.5 for cognitive extraction to balance semantic understanding with structured output. For report generation, we implemented a Retrieval-Augmented Generation (RAG) architecture~\cite{lewis2020retrieval} where AnythingLLM serves as the document management and RAG orchestration platform that manages: (1) vector database of DSM-5~\cite{DSM5} diagnostic criteria, (2) embedding generation and storage, and (3) retrieval pipeline orchestration interfacing with DeepSeek-V3. The system interfaces with AnythingLLM through its REST API, where document vectorization, semantic retrieval, and context injection are handled internally by the platform based on diagnosis-specific keywords extracted from patient narratives. The RAG-enhanced prompts explicitly constrain the LLM to use only retrieved documents, prohibit general knowledge, and specify JSON output schemas. For example, the Stage 1 diagnostic analysis prompt template includes: role definition (``expert clinical diagnostic assistant''), document retrieval keywords (\eg, for PTSD: [Post-Traumatic Stress Disorder, PTSD, 309.81, F43.10]), structured patient data, and JSON schema specifying \texttt{primary\hspace{0pt}Diagnosis}, \texttt{confidence\hspace{0pt}Level}, \texttt{key\hspace{0pt}Symptoms}, \texttt{dsm\hspace{0pt}Criteria}, and \texttt{differential\hspace{0pt}Diagnosis}. For cognitive element extraction, the prompt instructs the model to act as a "professional cognitive behavioral therapist" and extract seven categories of elements (core beliefs, automatic thoughts, cognitive distortions, physical reactions, emotional responses, behavioral responses, triggers) with structured JSON output containing node objects (\texttt{id}, \texttt{label}, \texttt{content}, \texttt{type}, \texttt{intensity}, etc.).
+%The second part is Cognitive Semantic Network construction: The system uses a specialized prompt system based on a multi-dimensional CBT theoretical framework to guide an LLM (DeepSeek V3~\cite{deepseekv3}) in extracting structured cognitive nodes from the patient's narrative. Subsequently, the frontend utilizes the D3.js library~\cite{bostock2011d3} to render this structured data as an interactive force-directed graph.
+
+In the~\stepbs~step, we accomplished panoramic image synthesis and editing using Diffusion360~\cite{Feng2023Diffusion360} and FLUX.1 Kontext~\cite{Labs2025Flux}, respectively. For semantic extraction and scene description generation, we employed DeepSeek-V3~\cite{deepseekv3} with specialized prompt templates for four extraction dimensions: visual cues ("professional trauma description visual cue extraction system"), environmental atmosphere, psychological projection, and sensory metaphors. Each prompt requests JSON output with \texttt{extracted} (array of cues) and \texttt{rawText} (source passages) fields, explicitly instructing the model to extract only genuine content from patient narratives. The extracted elements are synthesized into a therapeutic scene description (200--300 words, second-person perspective) using a scene designer prompt that emphasizes visual details, appropriate exposure levels, and grounding elements. The multi-perspective semantic extraction workflow is visualized as an interactive Sankey diagram using D3.js~\cite{Jain2014D3}, providing therapists with a traceable color-coded data flow map from patient narrative to final scene description.
+
+%\textbf{Tailored Environment Generation Pipeline}
+%This pipeline is the core of the human-AI collaborative content fine-tuning. It begins by performing a sequential, four-dimensional semantic extraction (visual, atmospheric, psychological, sensory) from the patient's narrative to generate an initial environment description. Its centerpiece is the intelligent weight-adjustment algorithm: when the therapist adjusts scene element intensities via sliders on the frontend, this algorithm dynamically constructs an adjustmentInfo string on the backend containing all tuning details (e.g., "Crowd Density: 7/10"). This instructional string, along with the original description, is wrapped by a specialized system prompt and sent to DeepSeek V3, instructing it to reconstruct the scene description based on these precise, quantitative parameters.
+
+In the~\stepcs~step, we adopted 3D Gaussian Splatting (3DGS)~\cite{kerbl2023gaussiansplatting} for novel view synthesis. The panoramic image (2:1 equirectangular format) is first mapped onto the inner surface of a virtual sphere using Three.js~\cite{threejs}, with a virtual camera fixed at the sphere's center and horizontal field of view set to $90	extdegree$. The positive y-axis points to the panorama's center. We implement a figure-8 camera trajectory for multi-view image generation, where the camera path is parameterized by $\text{yaw}(t) = \frac{\alpha}{2}\sin(4\pi t)$ for horizontal motion and $\text{pitch}(t) = \beta\sin(8\pi t)$ for vertical oscillations, with $t \in [0,1]$ representing normalized time, $\alpha$ denoting the horizontal coverage angle (typically $180	extdegree$ to focus on the front hemisphere where therapeutic scene content concentrates), and $\beta$ controlling the vertical motion amplitude. At each time step, the camera orientation is computed and a frame is rendered, generating a continuous video sequence. Each frame is recorded with its timestamp, camera pose (rotation quaternion and fixed position $[0,0,0]$), and intrinsic parameters (FOV, aspect ratio), formatted into a 3DGS-compatible \texttt{cameras.json} file. The frame sequence and camera trajectory are then processed by the 3DGS algorithm to reconstruct the high-fidelity 3D scene, where the temporal continuity of the video-based sampling enhances feature matching and depth estimation.
+
+%
+
+%	extbf{Immersive Scene Reconstruction Module}
+%The technical core of this module is 3D Gaussian Splatting (3DGS). Its pipeline includes an innovative human-computer interaction node: after the initial panoramic image is generated, the system integrates the Flux.1.kontext model, allowing the therapist to refine the image with natural language commands. Following therapist confirmation, the automated reconstruction process begins: it first uses Three.js~\cite{threejs} to map the refined 2D panorama onto an inverted virtual sphere; next, it employs a dense front-hemisphere sampling strategy to capture a multi-view image set from a virtual camera; then, the system generates a cameras.json camera parameter file containing the rotational pose (quaternions) for each view; finally, the image set and camera file are submitted to the 3DGS algorithm for the final high-fidelity 3D scene reconstruction.
+
+
+\section{User Study}
+
+To validate the effectiveness and usability of our generative VRET framework in real-world clinical settings, we conducted a comprehensive user study with mental health professionals. This evaluation focused on assessing the system's three core components and their collective contribution to personalized anxiety disorder treatment.
+
+\subsection{Study Design and Research Questions}
+
+Our study employed a within-subjects comparative design to evaluate the proposed generative VRET system against conventional pre-designed virtual environments. The research was structured around four primary research questions:
+
+\textbf{RQ1 (Feasibility \& Usability):} Can mental health professionals successfully operate the end-to-end workflow of the system? How do the three core components perform in terms of usability?
+
+\textbf{RQ2 (Clinical Utility \& Value):} Compared to traditional VRET approaches, can the system create more personalized and clinically valuable therapeutic content? Specifically, how do the RAG-driven clinical analysis and generated content compare to open-source preset scenarios (e.g., VivoosVR) in terms of accuracy, personalization, and clinical value?
+
+\textbf{RQ3 (Human-AI Collaboration):} How do therapists perceive their role, control, and trust in AI across the three system stages?
+
+\textbf{RQ4 (Output Quality \& Time Efficiency):} How does the final generated 3D scene perform in terms of realism, immersion, and therapeutic applicability? Particularly, what is the feasibility of the 6-7 minute reconstruction time and output quality compared to VivoosVR preset scenes?
+
+\subsection{Participants and Recruitment}
+
+We recruited 16 mental health professionals through convenience sampling. Based on G*Power analysis~\cite{faul2007gpower} for paired t-tests (effect size $dz = 0.7$, $\alpha = 0.05$, power $= 0.8$), the ideal sample size would be n = 19. Our achieved sample of n = 16 provides adequate statistical power (approximately 85\%) for detecting meaningful differences in the primary outcome measures.
+
+\textbf{Inclusion Criteria:} Licensed mental health professionals including psychotherapists, psychologists, psychiatrists, and mental health educators; basic interest in technology-assisted therapy; basic VRET experience for effective comparison with preset scenarios.
+
+\textbf{Exclusion Criteria:} No VRET-related experience or unfamiliarity with open-source tools like VivoosVR; insufficient background in mental health practice.
+
+The final sample comprised 16 mental health professionals. It included 8 psychotherapists/physicians (mean experience: 4.8 years, SD = 4.2), 5 mental health educators (mean experience: 10.1 years, SD = 8.6), 2 psychologists, and 1 psychiatric nurse. The sample included 12 females and 4 males, with ages ranging from 25 to 48 years (M = 33.2, SD = 7.1). All participants provided informed consent, and the study protocol was approved by the institutional review board.
+
+\subsection{Materials and Apparatus}
+
+To facilitate the user study, a range of materials were prepared and specific apparatus was utilized.
+
+\textbf{Patient Case Vignettes:} We developed three representative fictional patient cases:
+\begin{itemize}
+    \item \textbf{Case 1 - Li:} 28-year-old software engineer with severe social anxiety, core situation involving team meeting presentations
+    \item \textbf{Case 2 - Zhang:} 32-year-old elementary school teacher with generalized anxiety disorder, core situations involving public classes and parent communication
+    \item \textbf{Case 3 - Wang:} 45-year-old bank credit officer with OCD and hoarding behaviors, core situations involving work inspections and household hoarding
+\end{itemize}
+
+\textbf{Baseline System:} VivoosVR served as the comparison baseline, representing conventional VRET approaches. This system provides seven different preset scenarios covering common phobias and social anxiety: 360 Elevator (elevator phobia), 360 Toilet (public restroom phobia), Fear of Cats (cat phobia), Fear of Needle (injection phobia), Fear of Flight (flight phobia), Classroom Presentation (academic speaking anxiety), and Social Anxiety Presentation (public speaking anxiety). During the study, therapists were instructed to select and experience two scenarios from this collection that were most relevant to their clinical practice. This baseline approach represents the traditional standardized virtual environments that follow a one-size-fits-all design paradigm, which often fails to adequately activate patients' personalized fear structures~\cite{li2022application}. 
+
+\textbf{Hardware and Software:} Desktop computers with discrete GPUs, VR headsets compatible with the system, microphones for think-aloud protocols and interview recordings, and questionnaire platforms for data collection.
+
+\subsection{Procedure}
+
+The study followed a structured 60-minute protocol conducted individually with each participant:
+
+\textbf{Phase 1: Introduction and Training ($\approx$ 5 minutes)}
+Participants received an overview of the research purpose, signed informed consent, and received brief demonstrations of both systems using a teaching case. The guidelines of the think-aloud protocol were explained.
+
+\textbf{Phase 2: Baseline System Experience ($\approx$ 10 minutes)}
+Participants experienced VivoosVR by selecting and exploring two preset scenarios from the available collection (elevator phobia, public restroom phobia, cat phobia, injection phobia, flight phobia, classroom presentation and presentation of social anxiety) that were most relevant to their clinical practice. They then completed the SUS, TAM, and Raw NASA-TLX questionnaires for the baseline system.
+
+\textbf{Phase 3: Execution of the research system task ($\approx$ 45 minutes)}
+Participants were randomly assigned one of the three patient cases and completed the full \textbf{Clinical Assessment to Immersive Therapy Environment} workflow:
+\begin{itemize}
+    \item \textbf{Step 1:} Input patient information using the eight-step wizard; review AI-generated clinical analysis reports and cognitive semantic networks
+    \item \textbf{Step 2:} Generate initial scenes; perform at least two rounds of collaborative fine-tuning using sliders and text instructions
+    \item \textbf{Step 3:} Trigger final 3D reconstruction (6-7 minutes); experience the target scene in VR
+\end{itemize}
+
+\textbf{Phase 4: Post-Task Assessment ($\approx$ 10 minutes)}
+Participants completed the same standardized questionnaires (SUS, TAM, Raw NASA-TLX) for the research system, plus system-specific scales: Component-Based System Evaluation Scale, Therapeutic Quality of Generated Scenes Scale, and Preset vs. Generated Scenes Comparison Scale.
+
+\textbf{Phase 5: Comparative Interview ($\approx$ 10 minutes)}
+Semi-structured interviews explored detailed experiences with both systems, focusing on the three core components and overall comparative impressions.
+
+\subsection{Measures}
+To comprehensively evaluate our system's performance and user experience, we employed a combination of standardized and custom instruments.
+
+\subsubsection{Standardized Instruments}
+To gauge system usability, acceptance, and workload, we utilized several well-established standardized scales:
+
+\textbf{System Usability Scale (SUS):} A 10-item scale measuring perceived system usability~\cite{brooke1996sus} ($\alpha = 0.89$ in our sample).
+
+\textbf{Technology Acceptance Model (TAM):} An 8-item adapted scale measuring perceived usefulness and ease of use~\cite{davis1989perceived} ($\alpha = 0.92$ for usefulness, $\alpha = 0.88$ for ease of use).
+
+\textbf{Raw NASA Task Load Index (Raw NASA-TLX):} A 6-item scale measuring mental demand, physical demand, temporal demand, performance, effort, and frustration levels~\cite{hart1988development}.
+
+\subsubsection{Custom Instruments}
+Beyond standardized measures, we developed several custom instruments to assess specific aspects of our generative VRET system:
+
+\textbf{Component-Based System Evaluation Scale:} A 12-item scale assessing the three core components:
+\begin{itemize}
+    \item Clinical Intelligence Engine (4 items, M = 5.48, SD = 0.83)
+    \item Tailored Scenario Generation Pipeline (4 items, M = 5.52, SD = 0.68)
+    \item Immersive Environment Reconstruction Module (4 items, M = 4.84, SD = 0.75)
+\end{itemize}
+
+\textbf{Therapeutic Quality of Generated Scenes Scale:} An 8-item semantic differential scale~\cite{osgood1957measurement} measuring perceived fidelity, immersion, therapeutic relevance, and applicability.
+
+\textbf{Preset vs. Generated Scenes Comparison Scale:} An 8-item semantic differential scale~\cite{osgood1957measurement} comparing the generated scenes to VivoosVR~\cite{vivoosVR} preset scenarios across dimensions of personalization, clinical value, training applicability, and output quality.
+
+\section{Results}
+
+\subsection{Participant Characteristics}
+
+All 16 recruited mental health professionals completed the full study protocol with 100\% data completeness. Detailed participant demographics are reported in Section 4.3. Statistical power analysis confirmed adequate power (85\%) for detecting meaningful differences in the primary outcome measures.
+
+\subsection{System Usability and Acceptance}
+
+\textbf{System Usability:} The System Usability Scale (SUS) revealed comparable usability levels between systems. SUS scores showed a slight decrease from 64.06 (SD = 16.83) for the baseline VivoosVR system to 59.38 (SD = 13.52) for our generative VRET system. This difference was not statistically significant (t(15) = -0.79, p = 0.44, Cohen's d = -0.31)~\cite{cohen2013statistical}, suggesting that despite the added complexity of generative features, our system maintains acceptable usability, though there is room for interface optimization.
+
+\textbf{Technology Acceptance:} Technology Acceptance Model (TAM) results showed moderate acceptance levels. The generative system achieved a mean TAM score of 42.06 (SD = 6.71) compared to 39.88 (SD = 8.36) for the baseline system. While the difference was positive, it did not reach statistical significance (t(15) = 0.914, p = 0.188, Cohen's d = 0.25).
+
+\textbf{Workload Assessment:} NASA Task Load Index results revealed significantly higher cognitive demands for the generative system. Participants reported substantially higher workload when using our system (M = 43.91, SD = 17.82) compared to the baseline (M = 30.29, SD = 13.44), t(15) = 3.053, p = 0.008, Cohen's d = 0.862, indicating a large effect size for increased cognitive load. This finding suggests that while our system provides enhanced functionality, it requires optimization to reduce user cognitive burden.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{illustration/system_comparison_analysis.png}
+  \caption{System performance comparison between our generative VRET system and baseline VivoosVR across three key measures: SUS usability scores (Our: M=59.38, SD=13.52; Baseline: M=64.06, SD=16.83), TAM technology acceptance scores (Our: M=42.06, SD=6.71; Baseline: M=39.88, SD=8.36), and NASA-TLX cognitive workload scores (Our: M=43.91, SD=17.82; Baseline: M=30.29, SD=13.44). Statistical significance: SUS shows non-significant difference (p=0.44, Cohen's d=-0.31), indicating comparable usability; NASA-TLX indicates significantly higher workload (p=0.008, Cohen's d=0.86); TAM shows non-significant difference (p=0.19, Cohen's d=0.29). Error bars represent standard error. Sample size: n=16 paired comparisons.}
+  \label{fig:system_comparison}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.75\textwidth]{illustration/effect_sizes_visualization.png}
+  \caption{Effect sizes (Cohen's d) for system comparisons showing a large effect for NASA-TLX workload increase and small effects for both SUS usability and TAM acceptance. Positive NASA-TLX effect (d=0.86) indicates higher cognitive workload in our system (worse performance). Negative SUS effect (d=-0.31) indicates slightly lower usability, while positive TAM effect (d=0.29) indicates slightly higher acceptance. Horizontal dashed lines indicate Cohen's conventional thresholds for small (d = 0.2), medium (d = 0.5), and large (d = 0.8) effects. Sample size: n = 16 paired comparisons. Note: ns p > 0.05, * p < 0.05, ** p < 0.01, *** p < 0.001.}
+  \label{fig:effect_sizes}
+\end{figure}
+\FloatBarrier
+
+\subsection{System Component Performance}
+
+Component-based evaluation revealed strong performance across all three core modules. The overall system component score was 5.28 (SD = 0.57), indicating good user acceptance. Individual component analysis showed:
+\begin{itemize}
+    \item \textbf{Clinical Intelligence Engine:} Well-received for structured analysis capabilities
+    \item \textbf{Tailored Scenario Generation Pipeline:} Highly valued for personalization features
+    \item \textbf{Immersive Environment Reconstruction Module:} Appreciated for 3D visualization quality
+\end{itemize}
+
+Regression analysis identified significant predictors of system acceptance, with component performance explaining substantial variance in user attitudes toward the technology.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{illustration/component_evaluation_barchart.png}
+  \caption{Component evaluation scores on a 7-point Likert scale (1 = Extremely Poor, 2 = Very Poor, 3 = Poor, 4 = Fair, 5 = Good, 6 = Very Good, 7 = Excellent) showing performance across three core system modules. The Tailored Scenario Generation Pipeline received the highest ratings (M = 5.52, SD = 0.68), followed by the Clinical Intelligence Engine (M = 5.48, SD = 0.83) and Environment Reconstruction Module (M = 4.84, SD = 0.75). Error bars indicate standard deviations. A dashed horizontal line indicates the mean score for Overall System Performance (M = 5.28). Sample size: n = 16 participants.}
+  \label{fig:component_barchart}
+\end{figure}
+\FloatBarrier
+
+\subsection{Therapeutic Quality Assessment}
+
+The Therapeutic Quality scale demonstrated strong positive evaluation of generated scenes. Participants rated the therapeutic quality of generated environments at 39.62 (SD = 7.37), indicating above-average perceived clinical value. The Preset vs. Generated Scenes Comparison revealed positive attitudes toward personalization, with participants rating generated scenes favorably at 40.94 (SD = 5.34) when directly comparing personalization capabilities.
+
+\subsection{Professional Group Analysis}
+
+One-way ANOVA analyses revealed no significant differences between professional groups across all primary outcome measures, supporting the system's broad cross-professional applicability:
+- System Usability (SUS): $F(3,12) = 0.318$, $p = 0.812$
+- Technology Acceptance (TAM): $F(3,12) = 1.875$, $p = 0.188$
+- Workload (NASA-TLX): $F(3,12) = 0.926$, $p = 0.458$
+- Component Evaluation: $F(3,12) = 1.105$, $p = 0.359$, $\eta^2 = 0.145$
+
+These findings indicate consistent system performance across different professional backgrounds and specializations.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{illustration/professional_groups_comparison.png}
+  \caption{System evaluation scores across different professional groups in an exploratory analysis with small sample sizes (Clinical Practitioners n=9, Mental Health Educators n=4, Psychometric Specialists n=2, Psychiatric Nurse n=1). Each point represents an individual participant's score. Error bars show standard error where n>1. Due to limited sample sizes, findings are exploratory and support preliminary observations of cross-professional consistency rather than definitive statistical conclusions.}
+  \label{fig:professional_groups}
+\end{figure}
+\FloatBarrier
+
+\subsection{Qualitative Findings: Thematic Analysis}
+
+Thematic analysis~\cite{braun2006using} of 13 valid interviews (71 coded segments, 88.2\% coverage rate) identified four core themes through systematic open, axial, and selective coding, following Braun \& Clarke's six-step thematic analysis framework with enhanced reliability through v3.0 methodological improvements:
+
+\textbf{RQ2: Clinical Value and Personalized Content (56.00 importance score):} This emerged as the highest-priority theme with 21 coded segments across all 13 interviews (100\% coverage). The analysis revealed strong positive sentiment (71.4\% neutral, 19.0\% positive, 9.6\% negative) regarding the system's ability to create personalized therapeutic environments. All therapists recognized the value of cognitive semantic networks and four-dimensional semantic extraction, with one noting: "This system visualizes the doctor's thinking process, making it a complete auxiliary diagnostic system." Representative quotes include: "The cognitive semantic network and four-dimensional semantic extraction could provide better help for therapists to understand patients" and "If I input more detailed information, the final result will be more accurate."
+
+\textbf{RQ4: Quality-Efficiency Trade-offs (39.67 importance score):} This theme captured 13 coded segments across 4 interviews (30.8\% coverage) with uniformly positive sentiment (100\% positive). Despite the 6-7 minute generation time, participants consistently endorsed the time-quality trade-off. Key representative quotes: "If it can finally generate this, I think it's worth it. Of course, if it could be improved to be faster, that would be even better" and "The final 3D environment generation takes about seven to eight minutes. Do you think this time is worth waiting for in real clinical practice?" However, therapists suggested scheduling generation during inter-session intervals rather than during patient consultations.
+
+\textbf{RQ3: Human-AI Collaboration Experience (29.50 importance score):} With 7 coded segments across 1 interview (7.7\% coverage), this theme showed positive sentiment (100\% positive) regarding the collaborative treatment model. The representative quotes demonstrated strong preference for the "collaborator" mode: "This system is really good, this way we can discuss with patients during the treatment process. I can set parameters while letting them see if this matches their thoughts." This validates the human-AI co-creation design philosophy over traditional "operator" models.
+
+\textbf{RQ1: Technical Feasibility and System Usability (25.82 importance score):} This theme included 30 coded segments across 6 interviews (46.2\% coverage) with mixed sentiment (83.3\% neutral, 16.7\% negative). Participants acknowledged system complexity while recognizing functional value. Representative quotes included concerns about operational difficulty: "The operation difficulty is too high for us, we definitely won't use it" alongside recognition of system transparency: "I can see the AI's thinking process clearly." The analysis revealed that while technical complexity poses adoption barriers, the system's interpretability enhances professional trust.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{illustration/qualitative_themes_analysis.png}
+  \caption{Qualitative thematic analysis results showing the distribution of 71 coded segments across four research questions after comprehensive correction. Left panel displays coding frequency versus thematic coverage, where RQ1 = Technical Feasibility \& System Usability (n=30, 42.3\%), RQ2 = Clinical Value \& Treatment Effectiveness (n=21, 29.6\%), RQ4 = Quality-Efficiency Trade-offs (n=13, 18.3\%), RQ3 = Human-AI Collaboration (n=7, 9.9\%). Bubble size represents the number of coded segments. Right panel shows sentiment distribution across themes, displaying the proportion of positive, neutral, and negative sentiment codes. Data represents analysis of 71 coded segments from 13 interviews following comprehensive coding review and supplementation.}
+  \label{fig:qualitative_themes}
+\end{figure}
+\FloatBarrier
+
+\subsection{Mixed-Methods Integration: Triangulation Analysis}
+
+Triangulation analysis revealed high convergence between quantitative and qualitative findings across all research questions:
+
+\textbf{RQ1 (Technical Feasibility):} Quantitative usability assessment (SUS: p = 0.44, d = -0.31, non-significant) corresponded with qualitative themes of technical feasibility and system usability (30 coded segments, mixed sentiment: 83.3\% neutral, 16.7\% negative). The analysis revealed that while system complexity poses adoption barriers and usability scores showed a slight decrease, the system maintains acceptable usability levels. The mixed qualitative sentiment highlights specific areas for interface optimization to enhance user experience.
+
+\textbf{RQ2 (Clinical Value):} Strong quantitative ratings for therapeutic quality (M = 39.62) and comparison favorability (M = 40.80) perfectly corresponded with the qualitative theme of clinical value and personalized content (21 coded segments, 100\% coverage, importance score 56.00). All participants endorsed the cognitive semantic networks and four-dimensional semantic extraction as valuable features. This convergence supports professional recognition of the clinical value proposition.
+
+\textbf{RQ3 (Human-AI Collaboration):} Consistent component performance across professional groups (no significant differences) correlated with the human-AI collaboration experience theme showing 100\% positive sentiment (7 coded segments, 7.7\% coverage). The explicit preference for "collaborator" over "operator" mode validates the human-AI co-creation design philosophy and confirms enhanced professional control sensation.
+
+\textbf{RQ4 (Quality vs. Efficiency):} The significantly increased workload (NASA-TLX: p = 0.008, d = 0.86) directly corresponded with qualitative themes of quality-efficiency trade-offs (13 coded segments, 30.8\% coverage, 100\% positive sentiment). Despite time concerns, participants consistently validated that quality outcomes were "worthwhile," while proposing workflow optimization through inter-session preparation. This convergence validates the time-quality tension as a solvable optimization challenge rather than a fundamental limitation.
+
+
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.5\textwidth]{illustration/triangulation_validation.png}
+  \caption{Mixed-methods triangulation validation results showing quantitative-qualitative evidence convergence across four research questions. Left panel displays evidence strength comparison between quantitative measures and qualitative measures. Right panel shows convergence rates indicating the degree of alignment between quantitative and qualitative findings. Analysis based on 71 coded segments from 13 interviews.}
+  \label{fig:triangulation}
+\end{figure} 
+\FloatBarrier
+
+\section{Discussion}
+
+This comprehensive user study with 16 mental health professionals provides crucial insights into the practical implementation and clinical value of generative AI-driven VRET systems. Through rigorous mixed-methods analysis combining quantitative assessments and qualitative thematic analysis, our findings reveal both significant opportunities and specific challenges that must be addressed for successful clinical deployment.
+
+\subsection{Key Findings and Their Implications}
+
+\textbf{Validated Clinical Value Proposition:} The study's most important finding is the strong recognition of personalized clinical value (21 coded segments, 100\% participant coverage, 19.0\% positive sentiment). This convergence between strong quantitative therapeutic quality ratings (M = 39.62) and qualitative endorsement supports the core value proposition of generative VRET. The high importance score (56.00) for personalized clinical value recognition, combined with explicit interview validation of cognitive semantic networks as core valuable features, indicates that professionals strongly desire the capabilities our system provides, establishing a solid foundation for technology adoption.
+
+\textbf{Usability Considerations:} System usability assessment revealed comparable performance between our system and the baseline (SUS: p = 0.44, Cohen's d = -0.31, non-significant), with our system scoring slightly lower (M = 59.38 vs. 64.06). This indicates that despite the added complexity of integrating multiple AI components and generative features, the system maintains acceptable usability levels. However, the slight decrease suggests important areas for interface optimization. The finding validates that our human-AI collaborative design approach successfully manages complexity, though refinements in user interface design could further enhance usability.
+
+\textbf{The Time Efficiency Challenge:} The most critical barrier identified is the significant increase in cognitive workload (NASA-TLX: p = 0.008, d = 0.86) and concern about time efficiency (30.8\% of participants expressed concerns through 13 coded segments). The 6-7 minute generation time conflicts with clinical workflow expectations, creating a fundamental tension between personalization benefits and practical constraints. However, interviews revealed that participants considered this time investment "worthwhile" for quality outcomes, while providing specific suggestions for improvement including voice recording consultation capabilities. This finding indicates that technical optimization must prioritize processing speed without compromising output quality.
+
+\textbf{Successful Human-AI Collaboration Design:} The collaborative treatment experience theme showed strong positive sentiment (100\% positive, 7 coded segments) and cross-professional acceptance (no significant group differences), validating our "human-AI co-creation" design philosophy. Interviews explicitly confirmed preference for the "collaborator" over "operator" mode, with participants expressing enhanced control sensation and appreciation for collaborative workflow that allows real-time patient discussion. This validates our approach of augmenting rather than replacing professional judgment.
+
+\subsection{Theoretical and Practical Contributions}
+
+\textbf{Multi-Dimensional System Acceptance Theory:} Our mixed-methods analysis contributes to technology acceptance theory by identifying four key dimensions of generative VRET system evaluation: (1) Technical feasibility and usability, (2) Personalized clinical value, (3) Collaborative treatment experience, and (4) Quality-efficiency trade-offs. The identification of time efficiency as a cross-cutting factor affecting all dimensions provides a new lens for understanding technology adoption in clinical contexts.
+
+\textbf{Evidence-Based Design Validation:} The triangulation analysis demonstrating high convergence between quantitative and qualitative findings across all research questions provides validation for our design decisions. The integration of RAG-based clinical analysis, collaborative scenario tuning, and 3D reconstruction demonstrates progress in therapeutic technology integration.
+
+\textbf{Cross-Professional Applicability:} The absence of significant differences between professional groups (clinical practitioners, educators, psychometric specialists) across all measures supports the broad applicability of generative VRET technology. This finding suggests that unified training and deployment strategies can be effective across different mental health specializations.
+
+\subsection{Addressing Current Limitations and Future Directions}
+
+\textbf{Technical Optimization Priorities:} Based on our findings, future development should prioritize: (1) Algorithmic optimization to reduce generation time to under 3-4 minutes, (2) User interface refinement to reduce cognitive load while maintaining functionality, (3) Enhanced automation in the Clinical Intelligence Engine to minimize manual parameter adjustment requirements. Our current prototype, running on an NVIDIA RTX 5070 Ti GPU, requires approximately 6 to 7 minutes for 3D reconstruction of a single scene. While participants considered this time investment "worthwhile" for quality outcomes, this duration represents a practical constraint that highlights the need for further optimization to minimize disruption to the therapeutic flow. Furthermore, the quality of the generated content is inherently dependent on the capabilities of the underlying generative models and the richness of the patient's initial narrative. 
+
+\textbf{Workflow Integration Strategies:} The qualitative findings suggest that successful clinical implementation requires workflow redesign rather than forcing adaptation to current processes. The concept of "inter-session preparation" emerged as a promising approach, allowing therapists to generate personalized environments between patient visits rather than during consultation time. This finding indicates that deployment strategies should focus on workflow integration rather than session-time optimization alone.
+
+\textbf{Quality Enhancement Approaches:} While participants appreciated the personalization capabilities, the quality-efficiency trade-off theme (84.6\% coverage) indicates room for improvement in output quality. Future development should focus on enhancing the robustness and clinical relevance of generated environments while maintaining the personalization advantages.
+
+\subsection{Clinical Implementation Recommendations}
+
+\textbf{Staged Implementation Approach:} Given the learning curve and complexity concerns, we recommend a staged implementation beginning with highly motivated early adopters, followed by broader deployment with comprehensive training support. The universal value recognition provides a strong foundation for user motivation during the adoption process.
+
+\textbf{Training and Support Framework:} The mixed technology acceptance findings (moderate TAM scores despite high clinical value recognition) indicate that successful implementation requires robust training programs focusing on both technical proficiency and clinical integration. Support systems should emphasize the collaborative nature of the technology rather than presenting it as a replacement for professional skills.
+
+\textbf{Continuous Optimization Strategy:} The high consistency in cross-professional responses suggests that user feedback can effectively guide system improvements. Regular user studies and feedback integration should be incorporated into the development lifecycle to ensure continued alignment with clinical needs.
+
+\subsection{Broader Implications for Mental Health Technology}
+
+\textbf{Human-AI Collaboration Paradigm:} Our findings support the effectiveness of human-AI collaboration models in high-stakes clinical applications. The successful balance between AI capability and professional control provides a template for other therapeutic technology development projects. This approach is particularly relevant in the context of recent advances in mental health prediction using machine learning models~\cite{kamoji2024mental}, which demonstrate both the potential and the need for human oversight in AI-driven psychological interventions.
+
+\textbf{Personalization vs. Standardization:} The strong preference for personalized content over standardized approaches challenges the traditional reliance on one-size-fits-all therapeutic tools. This finding has implications beyond VRET, suggesting that mental health technology should prioritize individual adaptation capabilities.
+
+\textbf{Mixed-Methods Evaluation Framework:} The successful triangulation between quantitative measures and qualitative themes demonstrates the value of comprehensive evaluation approaches for complex therapeutic technologies. Future research in this domain should adopt similar mixed-methods frameworks to capture both performance metrics and user experience nuances.
+
+\subsection{Ethical Considerations and Deployment Challenges}
+
+\textbf{Patient Privacy and Data Security:} As a system handling sensitive patient data, privacy is paramount. In our prototype, all patient data is processed in a secure environment, and prompts sent to external APIs are anonymized. For real-world deployment, adherence to regulations like HIPAA/GDPR would require on-premise model hosting or certified-secure API usage. Our "human-AI co-creation" design is the primary mechanism for ensuring safety, mitigating risks of AI bias or the generation of potentially harmful content~\cite{fiske2019ethics}. Formal IRB (Institutional Review Board) approval is required before any clinical use.
+
+\textbf{Professional Responsibility and AI Oversight:} The human-AI collaboration paradigm places significant responsibility on mental health professionals to maintain clinical oversight throughout the generation process. This requires adequate training not only in system operation but also in recognizing potential AI-generated content that may be clinically inappropriate or potentially harmful. The integration of biofeedback systems for real-time adaptation~\cite{zelis2025adaptive} provides one approach to ensuring therapeutic safety through continuous monitoring of patient responses. The system's transparency features, including the cognitive semantic networks and traceable scenario generation pipeline, are designed to support professional judgment rather than replace it.
+
+\textbf{Implementation and Scalability Challenges:} The computational requirements of our system present scalability challenges for widespread clinical deployment. The current 6-7 minute generation time, while acceptable to study participants, may require infrastructure investments and workflow adaptations that smaller clinical practices might find challenging. Future work should explore cloud-based solutions and optimization strategies that can make the technology more accessible across diverse clinical settings.
+
+\subsection{Study Limitations and Future Research}
+
+\textbf{Sample and Generalizability:} While our sample of 16 professionals provided adequate statistical power for primary analyses, larger-scale validation studies are needed to confirm generalizability across different clinical settings and cultural contexts. The convenience sampling approach may have introduced selection bias toward technology-interested professionals.
+
+\textbf{Temporal Limitations:} Our single-session evaluation provides initial usability and acceptance data but cannot assess long-term adoption patterns or learning effects. Longitudinal studies examining sustained use and evolving user perceptions would provide valuable insights for implementation planning.
+
+\textbf{Theoretical Saturation:} The qualitative analysis achieved moderate theoretical saturation (68.75\%), indicating that additional data collection could reveal further themes and refine the theoretical framework. Future research should expand the qualitative component to achieve fuller theoretical development.
+
+\textbf{Clinical Efficacy Validation:} While this study establishes professional acceptance and usability, clinical efficacy trials with actual patients are essential to validate therapeutic outcomes and guide evidence-based implementation.
+
+\textbf{Experimental Design Limitations:} Due to the complexity of the prototype system and the need for participants to familiarize themselves with basic VR operations, our study employed a fixed order where participants always experienced the baseline system first. While this approach minimized learning curve effects for the complex generative task, it may have introduced order effects such as fatigue or practice effects. Future studies should employ counterbalanced designs to rigorously isolate these potential confounds.
+
+\section{Conclusion}
+
+This paper presents a generative VRET framework that addresses the challenge of personalization in anxiety disorder treatment. Through the integration of AI technologies including RAG-based clinical analysis, LLM-driven scenario generation, and 3D Gaussian Splatting reconstruction, our system enables the creation of dynamic, personalized therapeutic environments that can be generated within clinical sessions. This approach builds upon established virtual reality applications in anxiety relief~\cite{li2022application} while incorporating recent advances in adaptive virtual reality exposure therapy with biofeedback~\cite{zelis2025adaptive} and mental health prediction using machine learning models~\cite{kamoji2024mental}.
+
+Our evaluation with 16 mental health professionals provides evidence for both the clinical value and practical considerations of generative VRET systems. The study reveals several important findings that contribute to our understanding of AI-augmented therapeutic technology:
+
+\textbf{Clinical Value Proposition:} The recognition of personalized clinical value (21 coded segments, 100\% participant coverage) establishes a foundation for technology adoption. Mental health professionals recognize the personalization capabilities that generative AI provides, with particular emphasis on cognitive semantic networks and four-dimensional semantic extraction as valuable features, acknowledging the limitations of current standardized approaches.
+
+\textbf{Human-AI Collaboration:} The comparable system usability (SUS: p = 0.44, non-significant) despite increased complexity, combined with positive interview sentiment for collaborative treatment experiences (7 coded segments, 100\% positive), validates our "human-AI co-creation" design philosophy. Participants expressed preference for the "collaborator" over "operator" mode, demonstrating that AI can augment professional capabilities while preserving clinical control and decision-making authority. While there is room for interface optimization, the system successfully manages the inherent complexity of generative AI features.
+
+\textbf{Cross-Professional Applicability:} The absence of significant differences between clinical practitioners, educators, and psychometric specialists across all measures (p > 0.05) supports the broad applicability of generative VRET technology, enabling unified deployment strategies.
+
+\textbf{Implementation Challenges and Solutions:} While the study identifies time efficiency as the primary barrier (30.8\% of participants expressed concerns through 13 coded segments), interviews revealed this represents an optimization challenge rather than a fundamental limitation. Participants confirmed the 6-7 minute generation time was "worthwhile" for quality outcomes while providing specific improvement suggestions. The increased cognitive workload (NASA-TLX: p = 0.008, d = 0.86) provides specific targets for user experience improvement, including interface localization and workflow simplification.
+
+The triangulation analysis demonstrating convergence between quantitative metrics and qualitative themes across all research questions provides validation for our mixed-methods approach and strengthens confidence in the findings. This convergence indicates that both the statistical results and user experiences point toward consistent conclusions about system strengths and areas for improvement.
+
+\textbf{Theoretical Contributions:} Our research contributes a multi-dimensional system acceptance framework for therapeutic AI technologies, identifying four key evaluation dimensions: technical feasibility, clinical value, collaborative experience, and quality-efficiency trade-offs. The identification of time efficiency as a cross-cutting factor provides new theoretical insights for understanding technology adoption in clinical contexts.
+
+\textbf{Practical Impact:} The study provides clear guidance for optimizing generative VRET systems: (1) prioritizing processing speed optimization to achieve sub-4-minute generation times, (2) simplifying user interfaces to reduce cognitive load while maintaining functionality, (3) developing workflow integration strategies such as "inter-session preparation" to align with clinical practice patterns.
+
+Looking forward, this work establishes generative AI as a viable and valuable approach for creating personalized therapeutic interventions. The strong professional endorsement for personalization capabilities, combined with successful demonstration of human-AI collaboration, provides a foundation for broader adoption of AI-augmented mental health technologies.
+
+The implications extend beyond VRET to the broader field of digital mental health interventions. Our findings demonstrate that when properly designed with appropriate human oversight, generative AI can create clinically valuable, personalized therapeutic content that professionals actively want to use in their practice.
+
+Future research should focus on longitudinal adoption studies, clinical efficacy trials with actual patients, and technical optimization to address the identified time efficiency challenges. The theoretical framework and mixed-methods evaluation approach developed in this study provide a template for evaluating other AI-augmented therapeutic technologies.
+
+Ultimately, this work contributes toward realizing the potential of personalized mental health interventions that transcend the limitations of generic, standardized therapeutic approaches while maintaining the clinical rigor and professional oversight essential for safe and effective treatment.
+
+\bibliographystyle{apacite}
+\begingroup
+\raggedright
+\bibliography{references}
+\endgroup
+
+\end{document}

@@ -1,0 +1,610 @@
+% Human-AI Collaborative Virtual Reality Exposure Therapy for Personalized Treatment of Anxiety Disorder
+
+\documentclass[sigconf,review,anonymous]{acmart}
+
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+
+% Listing style for prompts
+\lstdefinestyle{promptstyle}{
+  basicstyle=\small\ttfamily,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  xleftmargin=0.3cm,
+  xrightmargin=0.3cm,
+  numbers=none,
+  breakatwhitespace=false,
+  keepspaces=true,
+  showstringspaces=false,
+}
+
+\lstset{style=promptstyle}
+
+\begin{document}
+
+\title{Supplementary Materials:\\Prompt Templates and Technical Specifications}
+
+\author{Submission \#9014}
+\affiliation{}
+
+\renewcommand{\shortauthors}{Submission \#9014}
+
+\begin{abstract}
+This supplementary document provides complete prompt templates, technical configurations, and implementation details for the Human-AI Collaborative Virtual Reality Exposure Therapy (VRET) system described in the main paper. All templates use DeepSeek-V3 (\texttt{deepseek-chat}) with RAG-enhanced prompts for clinical analysis and scene generation.
+\end{abstract}
+
+\maketitle
+
+\section{Overview}
+
+This document contains:
+\begin{itemize}
+\item Clinical diagnostic analysis prompt templates (Section~\ref{sec:clinical})
+\item Cognitive element extraction prompt templates (Section~\ref{sec:cognitive})
+\item Scene description generation prompt templates (Section~\ref{sec:scene})
+\item Model configuration parameters (Section~\ref{sec:config})
+\item RAG implementation details (Section~\ref{sec:rag})
+\end{itemize}
+
+\section{Clinical Diagnostic Analysis Prompts}
+\label{sec:clinical}
+
+\subsection{Stage 1: Primary Diagnostic Analysis}
+
+This prompt guides the LLM to perform DSM-5-based diagnostic analysis using RAG-retrieved documents.
+
+\begin{lstlisting}
+You are an expert clinical diagnostic assistant.
+
+**Crucial Instructions for Analysis:**
+1. Role: You are an expert clinical diagnostic assistant.
+2. Primary Directive: You MUST strictly use ONLY the content 
+   from documents retrieved based on keywords below. Base your 
+   analysis SOLELY on the provided document context.
+3. Forbidden Action: DO NOT use your general knowledge. DO NOT 
+   reference external sources not present in retrieved documents.
+4. Handling Insufficient Information: If retrieved documents 
+   lack sufficient information, state: "Conclusion cannot be 
+   reached based on provided documents."
+
+**Keywords for Document Retrieval:**
+- Post-Traumatic Stress Disorder
+- PTSD
+- 309.81
+- F43.10
+- Trauma
+- Stress Response
+
+**Structured Diagnosis Data:**
+Patient Age: {age}
+Gender: {gender}
+Core Symptoms: {core_symptoms}
+Symptom Duration: {duration}
+Functional Impact: {functional_impact}
+Family History: {family_history}
+Treatment History: {treatment_history}
+
+**Symptom Description:**
+{patient_description}
+
+**Provide JSON Format Analysis:**
+{
+  "primaryDiagnosis": "Primary diagnosis based on DSM-5",
+  "confidenceLevel": "Confidence level (e.g., 85%)",
+  "keySymptoms": ["symptom 1", "symptom 2", "symptom 3"],
+  "dsmCriteria": {
+    "criterionA": "Criterion A match details and evidence",
+    "criterionB": "Criterion B match details and evidence",
+    "criterionC": "Criterion C match details and evidence",
+    "criterionD": "Criterion D match details and evidence",
+    "criterionE": "Criterion E match details and evidence"
+  },
+  "differentialDiagnosis": {
+    "considered": ["Diagnosis 1 to consider", 
+                   "Diagnosis 2 to consider"],
+    "excluded": ["Excluded diagnosis with rationale"]
+  },
+  "documentSources": ["DSM-5 specific entries cited"]
+}
+\end{lstlisting}
+
+\subsection{Diagnostic Keywords Mapping}
+
+Table~\ref{tab:keywords} shows the mapping between common diagnoses and their retrieval keywords.
+
+\begin{table}[h]
+\centering
+\caption{Diagnostic Keywords for RAG Document Retrieval}
+\label{tab:keywords}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Diagnosis} & \textbf{Keywords} \\
+\midrule
+PTSD & PTSD, 309.81, F43.10, Trauma \\
+Social Anxiety & Social Anxiety, 300.23, F40.10 \\
+GAD & GAD, 300.02, F41.1, Anxiety \\
+MDD & Depression, 296.2, F32, MDD \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Cognitive Element Extraction Prompts}
+\label{sec:cognitive}
+
+\subsection{Cognitive Semantic Network Extraction}
+
+This prompt extracts structured cognitive elements based on CBT theory.
+
+\begin{lstlisting}
+As a professional cognitive behavioral therapist, analyze the 
+following patient description and extract anxiety-related 
+cognitive semantic network elements.
+
+Patient Description:
+"""
+{patient_description}
+"""
+
+Extract the following cognitive elements:
+1. Core anxiety beliefs: Key negative beliefs held by patient
+2. Automatic thoughts: Situation-triggered automatic cognitions
+3. Cognitive distortions: Catastrophizing, dichotomous thinking, etc.
+4. Physical reactions: Anxiety-induced somatic symptoms
+5. Emotional responses: Affective states associated with anxiety
+6. Behavioral responses: Coping or avoidance behaviors
+7. Situational triggers: Anxiety-provoking scenarios/events
+
+Return results in the following JSON format with nodes and links:
+
+{
+  "nodes": [
+    {
+      "id": "node1",
+      "label": "Core Belief",
+      "content": "I'm never good enough",
+      "type": "belief",
+      "intensity": 8,
+      "confidence": "High",
+      "emotional": "Sadness, Shame",
+      "context": "Social situations, Performance evaluations",
+      "events": "Childhood criticism, Recent interview failure",
+      "memory": "5"
+    },
+    {
+      "id": "node2",
+      "label": "Automatic Thought",
+      "content": "They must think I'm terrible",
+      "type": "thought",
+      "intensity": 7,
+      "confidence": "High",
+      "emotional": "Anxiety, Fear",
+      "context": "Speaking in meetings, Talking to strangers",
+      "events": "Team meetings, Social gatherings",
+      "memory": "8"
+    }
+  ],
+  "links": [
+    {
+      "source": "node1",
+      "target": "node2",
+      "relationship": "leads to",
+      "strength": 8
+    }
+  ]
+}
+
+**Node Types:** 
+belief, thought, distortion, physical, emotion, behavior, trigger
+
+**Field Descriptions:**
+- intensity: 1-10 intensity rating (10 = strongest)
+- confidence: Low, Medium, High
+- emotional: Associated emotional states
+- context: Typical occurrence scenarios
+- events: Co-occurring events or situations
+- memory: Number of related memories (0-10 scale)
+
+**Link Descriptions:**
+- relationship: "leads to", "triggers", "reinforces", etc.
+- strength: 1-10 relationship strength rating (10 = strongest)
+
+Ensure JSON is complete with no syntax errors and all brackets 
+properly matched.
+IMPORTANT: Return values in English to maintain consistency.
+\end{lstlisting}
+
+\section{Scene Description Generation Prompts}
+\label{sec:scene}
+
+\subsection{Multi-Dimensional Semantic Extraction}
+
+The scene generation process uses four sequential extraction prompts followed by a synthesis prompt.
+
+\subsubsection{Visual Cues Extraction}
+
+\begin{lstlisting}
+You are a professional trauma description visual cue extraction 
+system. Analyze the following patient description and extract all 
+visual-related elements.
+
+Focus on extracting:
+- Spatial layout and arrangement
+- Lighting conditions and quality
+- Colors, hues, and visual tones
+- Shapes and forms of objects
+- Movement patterns and dynamics
+- Facial expressions and body language
+- Environmental visual characteristics
+
+Patient Description:
+"""
+{patient_description}
+"""
+
+Return analysis results in the following JSON format:
+{
+  "extracted": [
+    "visual cue 1: detailed description",
+    "visual cue 2: detailed description",
+    ...
+  ],
+  "rawText": "The original text passages that mention these 
+              visual cues"
+}
+
+Requirements:
+1. Ensure extracted cues are specific and detailed
+2. Extract only content genuinely present in original text
+3. Do not add hallucinated or assumed content
+4. Include surrounding context for each cue
+
+IMPORTANT: Your response must be VALID JSON ONLY with NO TEXT 
+before or after the JSON.
+\end{lstlisting}
+
+\subsubsection{Environmental Atmosphere Extraction}
+
+\begin{lstlisting}
+You are a professional environmental atmosphere analysis system. 
+Analyze the patient description and extract all environment-related 
+atmospheric elements.
+
+Focus on extracting:
+- Sense of space (open, confined, vast, cramped)
+- Oppressive or liberating feelings
+- Degree of openness or enclosure
+- Environmental mood and emotional tone
+- Ambient conditions
+- Atmospheric pressure or tension
+
+Patient Description:
+"""
+{patient_description}
+"""
+
+Return JSON format:
+{
+  "extracted": [
+    "atmospheric element 1: detailed description",
+    "atmospheric element 2: detailed description",
+    ...
+  ],
+  "rawText": "Original passages mentioning these atmospheric 
+              elements"
+}
+
+Ensure extracted elements are specific, detailed, and genuinely 
+from the original text. Do not add content not present.
+
+IMPORTANT: Response must be VALID JSON ONLY.
+\end{lstlisting}
+
+\subsubsection{Psychological Projection Extraction}
+
+\begin{lstlisting}
+You are a professional psychological projection analysis system. 
+Analyze the patient description and extract all psychology-related 
+projection elements.
+
+Focus on extracting:
+- Perceived judgments from others
+- Self-evaluation and self-perception
+- Fear anticipations and expectations
+- Anxiety responses and reactions
+- Projected emotions onto environment
+- Cognitive interpretations of situations
+
+Patient Description:
+"""
+{patient_description}
+"""
+
+Return JSON format:
+{
+  "extracted": [
+    "psychological projection 1: detailed description",
+    "psychological projection 2: detailed description",
+    ...
+  ],
+  "rawText": "Original passages mentioning these projections"
+}
+
+Ensure extracted projections are specific, detailed, and from 
+original text only.
+
+IMPORTANT: Response must be VALID JSON ONLY.
+\end{lstlisting}
+
+\subsubsection{Sensory Metaphors Extraction}
+
+\begin{lstlisting}
+You are a professional sensory metaphor analysis system. Analyze 
+the patient description and extract all sensory-related metaphorical 
+elements.
+
+Focus on extracting:
+- Physical manifestations of emotions (e.g., "heart sinking")
+- Materialization of abstract feelings
+- Embodied metaphors
+- Synesthetic descriptions
+- Somatic experiences described metaphorically
+
+Patient Description:
+"""
+{patient_description}
+"""
+
+Return JSON format:
+{
+  "extracted": [
+    "sensory metaphor 1: detailed description",
+    "sensory metaphor 2: detailed description",
+    ...
+  ],
+  "rawText": "Original passages mentioning these metaphors"
+}
+
+Ensure extracted metaphors are specific, detailed, and from 
+original text only.
+
+IMPORTANT: Response must be VALID JSON ONLY.
+\end{lstlisting}
+
+\subsection{Final Scene Description Synthesis}
+
+\begin{lstlisting}
+You are a professional PTSD exposure therapy scene designer. 
+Create an immersive yet safe scene description based on the 
+patient's trauma narrative and extracted cues from multiple 
+dimensions.
+
+This scene description should:
+1. Primarily focus on visual cues
+2. Be supplemented by environmental atmosphere
+3. Include psychological projection elements appropriately
+4. Incorporate sensory metaphors naturally
+5. Be realistic enough to evoke emotional responses
+6. Avoid being overly stimulating to prevent re-traumatization
+
+Create a concise, vivid scene description using second-person 
+("you") perspective to directly address the patient. Target 
+length: 200-300 words. Focus on sensory details, particularly 
+visual elements, while avoiding excessive explanation or analysis.
+
+Input Extracted Elements:
+- Visual Cues: {visual_cues}
+- Environmental Atmosphere: {environmental_atmosphere}
+- Psychological Projection: {psychological_projection}
+- Sensory Metaphors: {sensory_metaphors}
+
+Original Patient Narrative:
+{patient_narrative}
+
+Generate a therapeutic scene description that:
+1. Uses second-person perspective ("You are standing...")
+2. Prioritizes visual sensory details over other modalities
+3. Maintains appropriate therapeutic exposure level
+4. Includes grounding and safety elements
+5. Follows graduated exposure principles
+6. Provides clear spatial orientation
+7. Allows for patient agency and control
+
+Example Scene Structure:
+"""
+[Opening: Spatial orientation and immediate environment]
+You are standing at [location]. [Visual description of immediate 
+surroundings]. [Ambient conditions].
+
+[Middle: Detailed sensory exploration]
+[Describe key visual elements]. [Include relevant atmospheric 
+qualities]. [Note significant environmental features].
+
+[Grounding elements]
+Take a moment to [grounding instruction]. Notice [specific safe 
+elements]. You can [control/agency statement].
+
+[Closing: Safety and control reinforcement]
+Remember that [safety message]. You have control over [specific 
+control options]. [Pacing guidance].
+"""
+
+Generate the scene description now based on the provided extracted 
+elements and patient narrative.
+\end{lstlisting}
+
+\section{Model Configuration Parameters}
+\label{sec:config}
+
+\subsection{DeepSeek-V3 Configuration}
+
+Table~\ref{tab:config} shows the model configuration parameters used for different tasks.
+
+\begin{table}[h]
+\centering
+\caption{DeepSeek-V3 Configuration Parameters}
+\label{tab:config}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Parameter} & \textbf{Clinical} & \textbf{Cognitive} \\
+& \textbf{Analysis} & \textbf{Extraction} \\
+\midrule
+Model & deepseek-chat & deepseek-chat \\
+Temperature & 0.3 & 0.5 \\
+Max Tokens & 2000 & 4000 \\
+Top P & 1.0 & 1.0 \\
+Frequency Penalty & 0 & 0 \\
+Presence Penalty & 0 & 0 \\
+\midrule
+\textbf{Rationale} & Factual & Semantic \\
+& consistency & understanding \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Temperature Settings Rationale}
+
+\begin{itemize}
+\item \textbf{Clinical Analysis (0.3):} Low temperature ensures factual consistency and reduces hallucination risk when working with RAG-retrieved DSM-5 diagnostic criteria.
+
+\item \textbf{Cognitive Extraction (0.5):} Moderate temperature balances semantic understanding with structured output requirements, allowing the model to capture nuanced psychological patterns while maintaining JSON schema compliance.
+
+\item \textbf{Scene Generation (0.7):} Higher temperature (not shown in table, used in scene synthesis) enables creative but controlled generation of therapeutic scene descriptions.
+\end{itemize}
+
+\section{RAG Implementation Details}
+\label{sec:rag}
+
+\subsection{AnythingLLM API Integration}
+
+The system interfaces with AnythingLLM through REST API for RAG functionality:
+
+\begin{lstlisting}[language=Python,style=promptstyle]
+# API Endpoint
+POST http://localhost:3001/api/v1/workspace/{workspace_slug}/chat
+
+# Request Headers
+Authorization: Bearer {ANYTHINGLLM_API_KEY}
+Content-Type: application/json
+
+# Request Body
+{
+  "message": "{constructed_prompt_with_keywords}",
+  "mode": "chat"
+}
+
+# Response Format
+{
+  "id": "chat_id",
+  "textResponse": "LLM_generated_analysis",
+  "sources": [
+    {
+      "id": "source_doc_id",
+      "title": "DSM-5 Section Title",
+      "text": "Retrieved document content",
+      "score": 0.85,
+      "docAuthor": "DSM-5",
+      "published": "...",
+      "wordCount": 1250
+    }
+  ]
+}
+\end{lstlisting}
+
+\subsection{Document Vectorization Process}
+
+AnythingLLM internally handles:
+
+\begin{enumerate}
+\item \textbf{Document Chunking:} DSM-5 documents are automatically chunked by the platform based on semantic boundaries and token limits.
+
+\item \textbf{Vector Embedding:} Each chunk is converted to high-dimensional vector embeddings using the platform's configured embedding model.
+
+\item \textbf{Vector Storage:} Embeddings are stored in the vector database with associated metadata (source, title, etc.).
+
+\item \textbf{Similarity Search:} When a query with keywords arrives, the platform performs semantic similarity search to retrieve top-k most relevant chunks.
+
+\item \textbf{Context Injection:} Retrieved chunks are automatically injected into the LLM context before the user's prompt.
+\end{enumerate}
+
+\subsection{RAG Prompt Construction}
+
+The system constructs RAG-enhanced prompts by:
+
+\begin{enumerate}
+\item Extracting diagnosis-specific keywords from patient data
+\item Including explicit RAG instructions (use only retrieved docs)
+\item Specifying structured JSON output schema
+\item Providing patient symptom description
+\item Adding constraints (no general knowledge, cite sources)
+\end{enumerate}
+
+\subsection{Example RAG-Enhanced Prompt Flow}
+
+\begin{lstlisting}
+Step 1: Generate Keywords
+Input: Patient mentions "nightmares, flashbacks, avoidance"
+Output: ["PTSD", "Post-Traumatic Stress Disorder", "309.81", 
+         "F43.10", "Trauma", "Stress Response"]
+
+Step 2: Construct RAG Prompt
+"""
+**Keywords for Document Retrieval:**
+- Post-Traumatic Stress Disorder
+- PTSD
+- 309.81
+- F43.10
+...
+
+You MUST use ONLY retrieved documents...
+{rest of prompt}
+"""
+
+Step 3: Send to AnythingLLM
+The platform retrieves relevant DSM-5 sections and injects them 
+into context automatically.
+
+Step 4: DeepSeek-V3 Processing
+The model generates analysis based ONLY on retrieved context, 
+following the strict instructions.
+
+Step 5: Response with Sources
+System receives structured JSON analysis plus source citations.
+\end{lstlisting}
+
+\section{Validation and Quality Assurance}
+
+\subsection{Prompt Validation Checklist}
+
+All prompts were validated against:
+
+\begin{itemize}
+\item \textbf{Clarity:} Clear role definition and task specification
+\item \textbf{Constraints:} Explicit restrictions (RAG-only, no hallucination)
+\item \textbf{Format:} Valid JSON schema specification with examples
+\item \textbf{Completeness:} All required fields and their meanings
+\item \textbf{Reproducibility:} Deterministic outputs for clinical use
+\item \textbf{Clinical Validity:} Alignment with CBT/DSM-5 standards
+\end{itemize}
+
+\subsection{Output Validation}
+
+System validates LLM outputs by:
+
+\begin{itemize}
+\item JSON syntax validation
+\item Schema compliance checking
+\item Required field presence verification
+\item Data type validation
+\item Clinical plausibility checks (e.g., intensity in 1-10 range)
+\end{itemize}
+
+\section{Conclusion}
+
+This supplementary material provides complete technical specifications for reproducing the prompt engineering and LLM integration described in the main paper. All templates have been validated in clinical workflow testing and maintain consistency across English and Chinese versions.
+
+\end{document}
+
